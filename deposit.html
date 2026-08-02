@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Crypto Deposit Gateway</title>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    body { background-color: #0b0e14; color: #fff; font-family: sans-serif; display: flex; justify-content: center; padding: 20px; }
+    .deposit-box { background: #161b22; border: 1px solid #30363d; border-radius: 20px; padding: 24px; width: 100%; max-width: 450px; }
+    .crypto-select { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 16px 0; }
+    .crypto-btn { background: #0d1117; border: 1px solid #30363d; padding: 12px; border-radius: 12px; color: #fff; text-align: center; cursor: pointer; }
+    .crypto-btn.active { border-color: #388bfd; background: #1f2937; }
+    .qr-area { background: #fff; padding: 16px; display: inline-block; border-radius: 12px; margin: 20px 0; }
+    .input-field { width: 100%; padding: 12px; background: #0d1117; border: 1px solid #30363d; border-radius: 10px; color: #fff; margin-top: 8px; box-sizing: border-box; }
+    .action-btn { width: 100%; padding: 14px; background: #238636; border: none; color: #fff; font-weight: bold; border-radius: 12px; cursor: pointer; margin-top: 16px; }
+  </style>
+</head>
+<body>
+
+<div class="deposit-box" x-data="depositManager()" x-init="init()">
+  <h2>Crypto Deposit Terminal</h2>
+  <p style="color: #8b949e; font-size: 13px;">Choose an asset below to reveal its secure network receiving terminal address.</p>
+
+  <div class="crypto-select">
+    <template x-for="crypto in cryptos">
+      <div class="crypto-btn" :class="selectedCrypto?.id === crypto.id ? 'active' : ''" @click="selectCrypto(crypto)">
+        <div style="font-size: 18px; font-weight: bold;" x-text="crypto.icon"></div>
+        <div style="font-size: 11px;" x-text="crypto.symbol"></div>
+      </div>
+    </template>
+  </div>
+
+  <div style="text-align: center;" x-show="selectedCrypto">
+    <div class="qr-area"><div id="qrcode"></div></div>
+    <div style="font-size: 12px; color: #8b949e; margin-bottom: 4px;">Network: <span style="color:#fff; font-weight:bold;" x-text="selectedCrypto?.network"></span></div>
+    <input type="text" class="input-field" readonly :value="selectedCrypto?.address" style="text-align:center;">
+    <button @click="copyToClipboard()" class="action-btn" style="background:#21262d; margin-top:8px;" x-text="copied ? 'Copied Wallet!' : 'Copy Address'"></button>
+  </div>
+
+  <div style="margin-top: 20px;">
+    <label style="font-size: 12px; color: #8b949e;">Amount to Fund ($ USD)</label>
+    <input type="number" class="input-field" x-model="depositAmount" placeholder="0.00">
+  </div>
+
+  <button @click="confirmDeposit()" class="action-btn">Confirm Network Transfer</button>
+</div>
+
+<script>
+    function depositManager() {
+      return {
+        selectedCrypto: null,
+        depositAmount: '',
+        copied: false,
+        membershipTier: sessionStorage.getItem('membershipTier') || null,
+        membershipPrice: sessionStorage.getItem('membershipPrice') || null,
+        apiBaseUrl: 'http://localhost:5000/api',
+        currentUserId: sessionStorage.getItem('userId') || '65ef9a2c1f8b4e001c8b4567',
+        
+        cryptos: [
+          { id: 'btc', name: 'Bitcoin', symbol: 'BTC', icon: '₿', address: 'bc1qy5nkg0rsu7w4vp63c0a3es26uxnhwrjyu2c0gn', network: 'Bitcoin' },
+          { id: 'eth', name: 'Ethereum', symbol: 'ETH', icon: 'Ξ', address: '0xcf9CF6cC3A8F314999c9d2ba1136cB07255eFf0B', network: 'ERC-20' },
+          { id: 'trx', name: 'Tron', symbol: 'TRX', icon: '⬟', address: 'TNWjENWFiEhrEnwywLZL2y9Lw4S7WZj2dm', network: 'TRC-20' },
+          { id: 'sol', name: 'Solana', symbol: 'SOL', icon: '◎', address: 'Bw3p4QqmNUKK19hqJXABZXrG3Z5ryAqHs1mLrdn1986g', network: 'Solana' }
+        ],
+
+        init() {
+          this.selectCrypto(this.cryptos[0]);
+          const customAmt = sessionStorage.getItem('customDepositAmount');
+          if (customAmt) {
+            this.depositAmount = customAmt;
+            sessionStorage.removeItem('customDepositAmount');
+          } else if (this.membershipPrice) {
+            this.depositAmount = this.membershipPrice;
+          }
+        },
+
+        selectCrypto(crypto) {
+          this.selectedCrypto = crypto;
+          this.copied = false;
+          this.$nextTick(() => { this.generateQRCode(); });
+        },
+
+        generateQRCode() {
+          const qrContainer = document.getElementById('qrcode');
+          if (!qrContainer) return;
+          qrContainer.innerHTML = '';
+          new QRCode(qrContainer, { text: this.selectedCrypto.address, width: 160, height: 160 });
+        },
+
+        copyToClipboard() {
+          navigator.clipboard.writeText(this.selectedCrypto.address).then(() => {
+            this.copied = true;
+            setTimeout(() => { this.copied = false; }, 2000);
+          });
+        },
+
+        async confirmDeposit() {
+          const amount = parseFloat(this.depositAmount);
+          if (!amount || amount <= 0) return alert('Provide a valid funding amount.');
+
+          const description = this.membershipTier 
+            ? `Purchased ${this.membershipTier} Premium Membership` 
+            : `Funded via ${this.selectedCrypto.name}`;
+
+          try {
+            const res = await fetch(`${this.apiBaseUrl}/transactions`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: this.currentUserId, type: 'deposit', amount: amount, desc: description })
+            });
+
+            if(!res.ok) throw new Error("Rejected by backend.");
+
+            if (this.membershipTier) {
+              sessionStorage.removeItem('membershipTier');
+              sessionStorage.removeItem('membershipPrice');
+            }
+
+            alert('Crypto allocation confirmed globally.');
+            window.location.href = './dashboard.html';
+          } catch(err) {
+              alert(`Error sync: ${err.message}`);
+          }
+        }
+      }
+    }
+</script>
+</body>
+</html>

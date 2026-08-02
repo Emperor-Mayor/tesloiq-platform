@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tesloiq Dashboard</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background-color: #0b0e14; color: #ffffff; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        
+        .app-container { width: 100%; max-width: 390px; height: 844px; background-color: #0d1117; border-radius: 40px; overflow: hidden; position: relative; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.7), 0 0 0 12px #1f242d; display: flex; flex-direction: column; }
+        
+        @media (min-width: 769px) {
+            body { padding: 20px; }
+            .app-container { max-width: 1200px; height: 900px; border-radius: 24px; display: grid; grid-template-columns: 260px 1fr; }
+            .mobile-only { display: none !important; }
+            .desktop-sidebar { display: flex !important; }
+            .main-content { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
+            .view { padding: 24px 32px !important; }
+            .dashboard-grid { display: grid; grid-template-columns: 2fr 1.2fr; gap: 20px; }
+            .membership-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+        }
+
+        .desktop-sidebar { display: none; flex-direction: column; background-color: #161b22; border-right: 1px solid #21262d; padding: 30px 20px; }
+        .desktop-logo { font-size: 18px; font-weight: 800; color: #58a6ff; margin-bottom: 30px; display: flex; align-items: center; gap: 10px; }
+        .desktop-nav { display: flex; flex-direction: column; gap: 8px; flex: 1; }
+        .desktop-nav-item { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 12px; color: #8b949e; text-decoration: none; font-size: 14px; font-weight: 600; cursor: pointer; }
+        .desktop-nav-item.active, .desktop-nav-item:hover { background-color: #21262d; color: #fff; }
+        .desktop-user-profile { display: flex; align-items: center; gap: 12px; padding-top: 16px; border-top: 1px solid #21262d; }
+
+        .drawer-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 90; opacity: 0; visibility: hidden; transition: all 0.3s; }
+        .drawer-overlay.active { opacity: 1; visibility: visible; }
+        .drawer-menu { position: absolute; top: 0; left: -280px; width: 280px; height: 100%; background-color: #161b22; z-index: 100; transition: left 0.3s; padding: 60px 20px; display: flex; flex-direction: column; border-right: 1px solid #21262d; }
+        .drawer-menu.active { left: 0; }
+        .drawer-item { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 12px; color: #8b949e; text-decoration: none; font-size: 13px; cursor: pointer; }
+        .drawer-item.active { background-color: #21262d; color: #fff; }
+
+        .main-content { flex: 1; position: relative; overflow: hidden; }
+        .view { display: none; height: 100%; overflow-y: auto; padding: 10px 18px 80px 18px; scrollbar-width: none; }
+        .view.active { display: block; }
+
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .header-left { display: flex; align-items: center; gap: 12px; }
+        .menu-btn { background: none; border: none; color: #fff; font-size: 18px; cursor: pointer; }
+        .title-area h1 { font-size: 22px; font-weight: 700; }
+        .title-area p { font-size: 12px; color: #8b949e; }
+        .icon-btn { width: 38px; height: 38px; background-color: #161b22; border-radius: 50%; display: flex; justify-content: center; align-items: center; color: #8b949e; border: 1px solid #21262d; cursor: pointer; }
+
+        .card-slider-wrapper { overflow: hidden; border-radius: 20px; margin-bottom: 10px; }
+        .balance-card { background: linear-gradient(135deg, #16222f 0%, #0d1620 100%); border: 1px solid #1f2d3d; border-radius: 20px; padding: 20px; }
+        .card-top { display: flex; justify-content: space-between; }
+        .card-brand { font-size: 11px; font-weight: 700; color: #8b949e; }
+        .card-user { font-size: 13px; color: #c9d1d9; }
+        .balance-label { font-size: 12px; color: #8b949e; text-align: center; margin-top: 10px; }
+        .balance-amount { font-size: 32px; font-weight: 700; text-align: center; margin: 10px 0; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .eye-icon { font-size: 16px; color: #8b949e; cursor: pointer; }
+        
+        .action-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 20px 0; }
+        .action-item { background-color: #161b22; border: 1px solid #21262d; border-radius: 16px; padding: 12px 6px; display: flex; flex-direction: column; align-items: center; gap: 8px; cursor: pointer; }
+        .action-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; justify-content: center; align-items: center; }
+        .action-item span { font-size: 11px; color: #c9d1d9; }
+        .icon-deposit { background: rgba(46, 160, 67, 0.15); color: #3fb950; }
+        .icon-withdraw { background: rgba(248, 81, 73, 0.15); color: #f85149; }
+        .icon-invest { background: rgba(210, 153, 34, 0.15); color: #d29922; }
+        .icon-membership { background: rgba(210, 153, 34, 0.15); color: #e3b341; }
+
+        .chart-card { background-color: #161b22; border: 1px solid #21262d; border-radius: 20px; padding: 20px; margin-bottom: 20px; }
+        .chart-container { height: 140px; width: 100%; }
+        
+        .promo-card { background: linear-gradient(135deg, #1c2536 0%, #111827 100%); border: 1px solid #2d3748; border-radius: 20px; padding: 18px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .transaction-table { width: 100%; border-collapse: collapse; }
+        .transaction-table th { text-align: left; font-size: 10px; color: #484f58; padding-bottom: 8px; }
+        .transaction-table td { padding: 12px 0; border-top: 1px solid #21262d; font-size: 12px; }
+        .tx-type { padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: 600; }
+        .tx-type.deposit { background: rgba(46, 160, 67, 0.15); color: #3fb950; }
+        .tx-type.withdraw { background: rgba(248, 81, 73, 0.15); color: #f85149; }
+
+        .membership-card-tier { background: #161b22; border: 1px solid #30363d; border-radius: 20px; padding: 20px; margin-bottom: 16px; }
+        .tier-price { font-size: 28px; font-weight: 800; margin: 10px 0; }
+        .apply-btn { width: 100%; padding: 12px; border-radius: 12px; border: none; background-color: #238636; color: #fff; font-weight: 700; cursor: pointer; }
+
+        .modal-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 200; display: flex; justify-content: center; align-items: flex-end; opacity: 0; visibility: hidden; transition: all 0.3s; }
+        .modal-overlay.active { opacity: 1; visibility: visible; }
+        .modal-body { width: 100%; background-color: #161b22; border-top-left-radius: 24px; border-top-right-radius: 24px; padding: 24px; border: 1px solid #30363d; transform: translateY(100%); transition: transform 0.3s; }
+        .modal-overlay.active .modal-body { transform: translateY(0); }
+        .modal-title { font-size: 16px; font-weight: 700; margin-bottom: 16px; display: flex; justify-content: space-between; }
+        .modal-close { background: none; border: none; color: #8b949e; font-size: 16px; cursor: pointer; }
+        
+        .payment-options { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 16px; }
+        .payment-opt-btn { background-color: #0d1117; border: 1px solid #30363d; border-radius: 12px; padding: 12px; display: flex; align-items: center; gap: 10px; color: #fff; font-size: 12px; cursor: pointer; }
+        .payment-opt-btn.active { border-color: #388bfd; background-color: #1f2937; }
+        .form-group { margin-bottom: 14px; }
+        .form-label { display: block; font-size: 11px; color: #8b949e; margin-bottom: 6px; }
+        .form-input { width: 100%; padding: 12px; background-color: #0d1117; border: 1px solid #30363d; border-radius: 10px; color: #fff; }
+
+        .bottom-nav { position: absolute; bottom: 0; left: 0; right: 0; height: 65px; background-color: #161b22; border-top: 1px solid #21262d; display: flex; justify-content: space-around; align-items: center; padding-bottom: 10px; }
+        .nav-item { display: flex; flex-direction: column; align-items: center; color: #8b949e; font-size: 10px; text-decoration: none; cursor: pointer; }
+        .nav-item.active { color: #58a6ff; }
+        .user-avatar { width: 36px; height: 36px; border-radius: 50%; background-color: #d29922; display: flex; justify-content: center; align-items: center; font-weight: 700; color: #000; }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <!-- DESKTOP PERSISTENT SIDEBAR -->
+    <div class="desktop-sidebar">
+        <div class="desktop-logo">Tesloiq</div>
+        <div class="desktop-nav">
+            <a class="desktop-nav-item active" onclick="switchView('dashboardView')"><i class="fa-solid fa-house"></i> Dashboard</a>
+            <a class="desktop-nav-item" onclick="switchView('membershipView')"><i class="fa-solid fa-crown"></i> Membership Cards</a>
+            <a class="desktop-nav-item" onclick="redirectToDeposit()"><i class="fa-solid fa-arrow-down"></i> Deposit Funds</a>
+            <a class="desktop-nav-item" onclick="openWithdrawModal()"><i class="fa-solid fa-arrow-up"></i> Withdraw Funds</a>
+        </div>
+        <div class="desktop-user-profile">
+            <div class="user-avatar" id="desktopUserAvatar">JA</div>
+            <div>
+                <div style="font-size: 13px; font-weight: 700;" id="desktopUserName">Joshua Akinyele</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MOBILE DRAWER MENU OVERLAY -->
+    <div class="drawer-overlay mobile-only" id="drawerOverlay" onclick="toggleDrawer()"></div>
+    <div class="drawer-menu mobile-only" id="drawerMenu">
+        <div class="drawer-nav">
+            <a class="drawer-item active" onclick="switchView('dashboardView')"><i class="fa-solid fa-house"></i> Dashboard</a>
+            <a class="drawer-item" onclick="switchView('membershipView')"><i class="fa-solid fa-crown"></i> Membership Cards</a>
+            <a class="drawer-item" onclick="redirectToDeposit()"><i class="fa-solid fa-arrow-down"></i> Deposit</a>
+            <a class="drawer-item" onclick="openWithdrawModal()"><i class="fa-solid fa-arrow-up"></i> Withdraw</a>
+        </div>
+    </div>
+
+    <!-- MAIN VIEW WRAPPER -->
+    <div class="main-content">
+        <!-- DASHBOARD VIEW -->
+        <div class="view active" id="dashboardView">
+            <div class="header">
+                <div class="header-left">
+                    <button class="menu-btn mobile-only" onclick="toggleDrawer()"><i class="fa-solid fa-bars"></i></button>
+                    <div class="title-area">
+                        <h1>Dashboard</h1>
+                        <p id="welcomeUserText">Welcome back</p>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <div class="icon-btn" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i></div>
+                </div>
+            </div>
+
+            <div class="dashboard-grid">
+                <div>
+                    <div class="balance-card">
+                        <div class="card-top">
+                            <div>
+                                <div class="card-brand">Tesloiq</div>
+                                <div class="card-user" id="cardUserName">...</div>
+                            </div>
+                        </div>
+                        <div class="balance-label">Available Balance</div>
+                        <div class="balance-amount">
+                            <span id="balanceText">$0.00</span>
+                            <i class="fa-regular fa-eye eye-icon" onclick="toggleBalance()"></i>
+                        </div>
+                    </div>
+
+                    <!-- Action Items Grid -->
+                    <div class="action-grid">
+                        <div class="action-item" onclick="openDepositModal()">
+                            <div class="action-icon icon-deposit"><i class="fa-solid fa-arrow-down"></i></div>
+                            <span>Deposit</span>
+                        </div>
+                        <div class="action-item" onclick="openWithdrawModal()">
+                            <div class="action-icon icon-withdraw"><i class="fa-solid fa-arrow-up"></i></div>
+                            <span>Withdraw</span>
+                        </div>
+                        <div class="action-item" onclick="switchView('membershipView')">
+                            <div class="action-icon icon-membership"><i class="fa-solid fa-crown"></i></div>
+                            <span>Membership</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- History Framework -->
+                <div>
+                    <div class="transactions-header"><h3 style="font-size: 15px; margin-bottom: 10px;">Recent Transactions</h3></div>
+                    <table class="transaction-table">
+                        <thead>
+                            <tr><th>TYPE</th><th>DESCRIPTION</th><th style="text-align: right;">AMOUNT</th></tr>
+                        </thead>
+                        <tbody id="transactionList">
+                            <tr><td colspan="3" style="text-align:center; color:#8b949e;">Synchronizing history...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- MEMBERSHIP VIEW -->
+        <div class="view" id="membershipView">
+            <div class="header">
+                <div class="header-left">
+                    <button class="menu-btn" onclick="switchView('dashboardView')"><i class="fa-solid fa-arrow-left"></i></button>
+                    <div class="title-area"><h1>Membership Cards</h1></div>
+                </div>
+            </div>
+            <div class="membership-grid">
+                <div class="membership-card-tier">
+                    <div style="font-size: 11px; font-weight: 700; color: #8b949e;">SILVER TIER</div>
+                    <div class="tier-price">$2,500</div>
+                    <button class="apply-btn" onclick="applyMembership('Silver', 2500)">Apply — $2,500</button>
+                </div>
+                <div class="membership-card-tier">
+                    <div style="font-size: 11px; font-weight: 700; color: #d29922;">GOLD TIER</div>
+                    <div class="tier-price">$7,500</div>
+                    <button class="apply-btn" onclick="applyMembership('Gold', 7500)">Apply — $7,500</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile Nav Component -->
+    <div class="bottom-nav mobile-only">
+        <a class="nav-item" onclick="openDepositModal()"><i class="fa-solid fa-arrow-down"></i><span>Deposit</span></a>
+        <a class="nav-item active" onclick="switchView('dashboardView')"><i class="fa-solid fa-house"></i><span>Home</span></a>
+        <a class="nav-item" onclick="openWithdrawModal()"><i class="fa-solid fa-arrow-up"></i><span>Withdraw</span></a>
+    </div>
+
+    <!-- Modals Framework -->
+    <div class="modal-overlay" id="modalOverlay"><div class="modal-body" id="modalBody"><div class="modal-title"><span id="modalTitle">Header</span><button class="modal-close" onclick="closeModal()"><i class="fa-solid fa-xmark"></i></button></div><div id="modalContent"></div></div></div>
+</div>
+
+<script>
+    const API_BASE_URL = 'http://localhost:5000/api'; 
+    let currentUserId = sessionStorage.getItem('userId') || '65ef9a2c1f8b4e001c8b4567'; 
+    let currentBalance = 0.00;
+    let selectedMethod = 'card';
+    let isHidden = false;
+
+    window.addEventListener('DOMContentLoaded', () => { syncUserData(); });
+
+    async function syncUserData() {
+        try {
+            const res = await fetch(`${API_BASE_URL}/user/profile/${currentUserId}`);
+            if (!res.ok) throw new Error("Profile check failed");
+            const data = await res.json();
+            
+            currentBalance = data.balance;
+            document.getElementById('desktopUserName').innerText = data.name;
+            document.getElementById('welcomeUserText').innerText = `Welcome back, ${data.name.split(' ')[0]}`;
+            document.getElementById('cardUserName').innerText = data.name;
+            
+            updateBalanceUI();
+            loadTransactions();
+        } catch(err) {
+            console.error(err);
+        }
+    }
+
+    function updateBalanceUI() {
+        document.getElementById('balanceText').innerText = isHidden ? '$ ••••••••' : `$${currentBalance.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+    }
+
+    function toggleBalance() { isHidden = !isHidden; updateBalanceUI(); }
+    
+    function switchView(viewId) {
+        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+        document.getElementById(viewId).classList.add('active');
+    }
+
+    function toggleDrawer() {
+        document.getElementById('drawerOverlay').classList.toggle('active');
+        document.getElementById('drawerMenu').classList.toggle('active');
+    }
+
+    function redirectToDeposit(amount = '') {
+        if (amount) sessionStorage.setItem('customDepositAmount', amount);
+        window.location.href = './deposit.html';
+    }
+
+    function openDepositModal() {
+        document.getElementById('modalTitle').innerText = 'Deposit Funds';
+        document.getElementById('modalContent').innerHTML = `
+            <div class="form-label">Select Method</div>
+            <div class="payment-options">
+                <div class="payment-opt-btn active" id="opt-card" onclick="setPaymentMethod('card')"><i class="fa-solid fa-credit-card"></i> Card</div>
+                <div class="payment-opt-btn" id="opt-crypto" onclick="setPaymentMethod('crypto')"><i class="fa-brands fa-bitcoin"></i> Crypto</div>
+            </div>
+            <div class="form-group"><label class="form-label">Amount ($)</label><input type="number" id="payAmount" class="form-input" placeholder="e.g. 1000" /></div>
+            <div id="methodFields"><div class="form-group"><label class="form-label">Card Number</label><input type="text" class="form-input" placeholder="4532 •••• •••• 8910" /></div></div>
+            <button onclick="processDepositAction()" style="width:100%; padding:12px; background:#238636; border:none; color:#fff; border-radius:12px; font-weight:700; cursor:pointer;">Continue</button>
+        `;
+        document.getElementById('modalOverlay').classList.add('active');
+    }
+
+    function setPaymentMethod(method) {
+        selectedMethod = method;
+        document.querySelectorAll('.payment-opt-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(`opt-${method}`).classList.add('active');
+        document.getElementById('methodFields').innerHTML = method === 'crypto' 
+            ? `<p style="font-size:12px; color:#8b949e;">You will be redirected to choose an available crypto wallet address.</p>`
+            : `<div class="form-group"><label class="form-label">Card Number</label><input type="text" class="form-input" placeholder="4532 •••• •••• 8910" /></div>`;
+    }
+
+    function processDepositAction() {
+        const val = document.getElementById('payAmount').value;
+        if (!val || parseFloat(val) <= 0) return alert('Enter valid amount.');
+        if (selectedMethod === 'crypto') { closeModal(); redirectToDeposit(val); }
+        else { executeTransactionAPI('deposit', val, 'Card Payment'); }
+    }
+
+    function openWithdrawModal() {
+        document.getElementById('modalTitle').innerText = 'Withdraw Funds';
+        document.getElementById('modalContent').innerHTML = `
+            <div class="form-label">Select Destination</div>
+            <div class="payment-options">
+                <div class="payment-opt-btn active" id="opt-withdraw-crypto" onclick="setWithdrawMethod('crypto')"><i class="fa-brands fa-bitcoin"></i> Crypto Wallet</div>
+                <div class="payment-opt-btn" id="opt-withdraw-bank" onclick="setWithdrawMethod('bank')"><i class="fa-solid fa-building-columns"></i> Bank Account</div>
+            </div>
+            <div class="form-group"><label class="form-label">Amount ($)</label><input type="number" id="withdrawAmount" class="form-input" /></div>
+            <div id="withdrawFields"><div class="form-group"><label class="form-label">Wallet Address</label><input type="text" id="withdrawAddress" class="form-input" /></div></div>
+            <button onclick="processWithdrawAction()" style="width:100%; padding:12px; background:#da3633; border:none; color:#fff; border-radius:12px; font-weight:700; cursor:pointer;">Withdraw</button>
+        `;
+        document.getElementById('modalOverlay').classList.add('active');
+    }
+
+    function setWithdrawMethod(method) {
+        document.getElementById('withdrawFields').innerHTML = method === 'crypto'
+            ? `<div class="form-group"><label class="form-label">Wallet Address</label><input type="text" id="withdrawAddress" class="form-input" /></div>`
+            : `<div class="form-group"><label class="form-label">Bank Routing Number</label><input type="text" id="withdrawAddress" class="form-input" /></div>`;
+    }
+
+    function processWithdrawAction() {
+        const val = parseFloat(document.getElementById('withdrawAmount').value);
+        const addr = document.getElementById('withdrawAddress').value;
+        if (!val || val > currentBalance || !addr) return alert('Invalid metrics or insufficient balance.');
+        executeTransactionAPI('withdraw', val, `Withdrawn to ${addr.substring(0,6)}...`);
+    }
+
+    async function executeTransactionAPI(type, amount, desc) {
+        try {
+            const res = await fetch(`${API_BASE_URL}/transactions`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: currentUserId, type, amount, desc })
+            });
+            const data = await res.json();
+            currentBalance = data.balance;
+            updateBalanceUI(); loadTransactions(); closeModal();
+        } catch (err) { alert("Transaction failed"); }
+    }
+
+    async function loadTransactions() {
+        const tbody = document.getElementById('transactionList');
+        try {
+            const res = await fetch(`${API_BASE_URL}/transactions/${currentUserId}`);
+            const history = await res.json();
+            tbody.innerHTML = history.length === 0 ? `<tr><td colspan="3" style="text-align:center; color:#8b949e;">No transactions.</td></tr>` : '';
+            history.forEach(tx => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td><span class="tx-type ${tx.type}">${tx.type}</span></td><td>${tx.desc}</td><td style="text-align:right;">$${tx.amount}</td>`;
+                tbody.appendChild(tr);
+            });
+        } catch(err) { console.error(err); }
+    }
+
+    function applyMembership(tier, price) {
+        sessionStorage.setItem('membershipTier', tier);
+        sessionStorage.setItem('membershipPrice', price);
+        redirectToDeposit(price);
+    }
+    function closeModal() { document.getElementById('modalOverlay').classList.remove('active'); }
+    function logout() { sessionStorage.clear(); window.location.reload(); }
+</script>
+</body>
+</html>
