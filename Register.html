@@ -40,121 +40,75 @@
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
   <style>
-    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #060810; }
     ::-webkit-scrollbar { width: 8px; height: 8px; }
-    ::-webkit-scrollbar-track { background: #e2e8f0; }
-    ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 4px; }
-    ::-webkit-scrollbar-thumb:hover { background: #64748b; }
-    .dark ::-webkit-scrollbar-track { background: #374151; }
-    .dark ::-webkit-scrollbar-thumb { background: #6b7280; }
+    ::-webkit-scrollbar-track { background: #060810; }
+    ::-webkit-scrollbar-thumb { background: #6488a8; border-radius: 4px; }
   </style>
-
-  <script>
-    (function() {
-      if (localStorage.getItem('darkMode') === 'true' || (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-        document.documentElement.classList.add('dark');
-      }
-    })();
-  </script>
-  <!-- Live Chat: add your own widget here -->
 </head>
 
-<body class="bg-white dark:bg-black min-h-screen flex items-center justify-center p-4">
-  <div class="w-full max-w-md">
+<body class="bg-[#060810] text-white min-h-screen flex items-center justify-center p-4">
+  <div class="w-full max-w-md bg-[#0c0f18] p-8 rounded-2xl border border-white/5 shadow-2xl" x-data="registerForm()">
     <!-- Logo -->
     <div class="text-center mb-8">
-      <img src="./images/tlogo.svg" alt="T" class="w-10 h-10 object-contain mb-4 dark:hidden">
-      <img src="./images/tlogo-white.svg" alt="T" class="w-10 h-10 object-contain mb-4 hidden dark:block">
-      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Teslo<span class="text-slate-500">IQ</span></h1>
-      <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Investment Committee Registration</p>
+      <img src="./images/tlogo.svg" alt="T" class="w-12 h-12 mx-auto mb-3 opacity-80" onerror="this.src='https://via.placeholder.com/48?text=T'">
+      <h2 class="text-2xl font-black tracking-tight">Create Account</h2>
+      <p class="text-xs text-white/40 mt-1">Join the Exclusive Investment Committee</p>
     </div>
 
-    <!-- Card -->
-    <div class="bg-white dark:bg-white/[0.03] rounded-2xl shadow-soft border border-gray-200 dark:border-white/5 p-8">
-      <form method="POST" action="#" onsubmit="redirectToDashboard(event)" class="space-y-5">
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">First Name</label>
-            <input type="text" name="first_name" required placeholder="John"
-              class="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-white/5 bg-gray-50 dark:bg-white/[0.05] text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-all">
-          </div>
-          <div>
-            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Last Name</label>
-            <input type="text" name="last_name" required placeholder="Doe"
-              class="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-white/5 bg-gray-50 dark:bg-white/[0.05] text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-all">
-          </div>
-        </div>
-
+    <!-- Registration Form Framework -->
+    <form @submit.prevent="submitRegister">
+      <div class="space-y-4">
         <div>
-          <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Email Address</label>
-          <div class="relative">
-            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-              <i class="fa-solid fa-envelope text-gray-400 text-sm"></i>
-            </div>
-            <input type="email" name="email" required placeholder="john@example.com"
-              class="w-full pl-11 pr-4 py-3 rounded-xl border border-gray-200 dark:border-white/5 bg-gray-50 dark:bg-white/[0.05] text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-all">
-          </div>
+          <label class="block text-xs font-semibold uppercase tracking-wider text-white/50 mb-1">Username</label>
+          <input type="text" x-model="username" required class="w-full bg-[#141824] border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-[#6488a8] focus:ring-0 text-white">
         </div>
-
         <div>
-          <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Phone Number</label>
-          <div class="relative">
-            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-              <i class="fa-solid fa-phone text-gray-400 text-sm"></i>
-            </div>
-            <input type="tel" name="phone" required placeholder="+1 (555) 000-0000"
-              class="w-full pl-11 pr-4 py-3 rounded-xl border border-gray-200 dark:border-white/5 bg-gray-50 dark:bg-white/[0.05] text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-all">
-          </div>
+          <label class="block text-xs font-semibold uppercase tracking-wider text-white/50 mb-1">Email Address</label>
+          <input type="email" x-model="email" required class="w-full bg-[#141824] border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-[#6488a8] focus:ring-0 text-white">
         </div>
-
         <div>
-          <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Password</label>
-          <div class="relative">
-            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-              <i class="fa-solid fa-lock text-gray-400 text-sm"></i>
-            </div>
-            <input type="password" name="password" required minlength="8" placeholder="Min. 8 characters"
-              class="w-full pl-11 pr-4 py-3 rounded-xl border border-gray-200 dark:border-white/5 bg-gray-50 dark:bg-white/[0.05] text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-all">
-          </div>
+          <label class="block text-xs font-semibold uppercase tracking-wider text-white/50 mb-1">Password</label>
+          <input type="password" x-model="password" required class="w-full bg-[#141824] border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-[#6488a8] focus:ring-0 text-white">
         </div>
+      </div>
 
-        <button type="submit" class="w-full py-3.5 bg-gradient-to-r from-slate-500 to-slate-600 text-white font-semibold rounded-xl shadow-lg shadow-slate-500/25 hover:shadow-xl hover:shadow-slate-500/30 transition-all text-sm">
-          Create Account
-        </button>
-      </form>
-    </div>
+      <button type="submit" class="w-full mt-6 bg-[#6488a8] hover:bg-[#7a9bb5] text-[#060810] font-bold text-xs uppercase tracking-widest py-4 rounded-xl transition-all shadow-lg" x-text="loading ? 'Creating Account...' : 'Register Master Node'"></button>
+    </form>
 
-    <div class="text-center text-sm text-gray-500 dark:text-gray-400 mt-6 space-y-3">
-      <p>
-        <a href="/" class="text-slate-500 font-semibold hover:text-slate-600">← Back to Home</a>
-      </p>
-      <p>
-        Already have an account?
-        <a href="./Sign_In.html" class="text-slate-500 font-semibold hover:text-slate-600">Sign In</a>
-      </p>
+    <div class="text-center mt-6">
+      <p class="text-xs text-white/30">Already standard member? <a href="Sign_In.html" class="text-[#6488a8] hover:underline font-medium">Sign In here</a></p>
     </div>
   </div>
 
   <script>
-  function redirectToDashboard(event) {
-    event.preventDefault();
-    
-    const firstName = document.querySelector('input[name="first_name"]').value;
-    const lastName = document.querySelector('input[name="last_name"]').value;
-    const email = document.querySelector('input[name="email"]').value;
-    const phone = document.querySelector('input[name="phone"]').value;
-    const password = document.querySelector('input[name="password"]').value;
-    
-    if (firstName && lastName && email && phone && password) {
-      alert('Account created successfully! Please sign in to access your dashboard.');
-      setTimeout(() => {
-        window.location.href = './Sign_In.html';  // ✅ 
-      }, 1000);
-    } else {
-      alert('Please fill in all fields');
+    function registerForm() {
+      return {
+        username: '',
+        email: '',
+        password: '',
+        loading: false,
+        async submitRegister() {
+          this.loading = true;
+          try {
+            const res = await fetch('https://tesloiq.onrender.com/user/register', { // Pointing to your backend engine
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ username: this.username, email: this.email, password: this.password })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || "Registration sequence failed.");
+            
+            alert('Registration completed successfully.');
+            window.location.href = './Sign_In.html';
+          } catch(err) {
+            alert(err.message);
+          } finally {
+            this.loading = false;
+          }
+        }
+      }
     }
-  }
-</script>
-  <script src="//code.jivosite.com/widget/2RUwjV75YI" async></script>
+  </script>
 </body>
 </html>

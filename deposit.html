@@ -53,10 +53,10 @@
         selectedCrypto: null,
         depositAmount: '',
         copied: false,
-        membershipTier: sessionStorage.getItem('membershipTier') || null,
-        membershipPrice: sessionStorage.getItem('membershipPrice') || null,
+        membershipTier: localStorage.getItem('membershipTier') || null,
+        membershipPrice: localStorage.getItem('membershipPrice') || null,
         apiBaseUrl: 'https://tesloiq.onrender.com',
-        currentUserId: sessionStorage.getItem('userId') || '65ef9a2c1f8b4e001c8b4567',
+        currentUserId: localStorage.getItem('userId'),
         
         cryptos: [
           { id: 'btc', name: 'Bitcoin', symbol: 'BTC', icon: '₿', address: 'bc1qy5nkg0rsu7w4vp63c0a3es26uxnhwrjyu2c0gn', network: 'Bitcoin' },
@@ -67,10 +67,10 @@
 
         init() {
           this.selectCrypto(this.cryptos[0]);
-          const customAmt = sessionStorage.getItem('customDepositAmount');
+          const customAmt = localStorage.getItem('customDepositAmount');
           if (customAmt) {
             this.depositAmount = customAmt;
-            sessionStorage.removeItem('customDepositAmount');
+            localStorage.removeItem('customDepositAmount');
           } else if (this.membershipPrice) {
             this.depositAmount = this.membershipPrice;
           }
@@ -99,6 +99,7 @@
         async confirmDeposit() {
           const amount = parseFloat(this.depositAmount);
           if (!amount || amount <= 0) return alert('Provide a valid funding amount.');
+          if (!this.currentUserId) return alert('Session expired. Please sign in again.');
 
           const description = this.membershipTier 
             ? `Purchased ${this.membershipTier} Premium Membership` 
@@ -107,15 +108,18 @@
           try {
             const res = await fetch(`${this.apiBaseUrl}/transactions`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                },
                 body: JSON.stringify({ userId: this.currentUserId, type: 'deposit', amount: amount, desc: description })
             });
 
             if(!res.ok) throw new Error("Rejected by backend.");
 
             if (this.membershipTier) {
-              sessionStorage.removeItem('membershipTier');
-              sessionStorage.removeItem('membershipPrice');
+              localStorage.removeItem('membershipTier');
+              localStorage.removeItem('membershipPrice');
             }
 
             alert('Crypto allocation confirmed globally.');
