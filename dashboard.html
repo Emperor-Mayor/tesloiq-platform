@@ -3,789 +3,247 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tesloiq Dashboard</title>
+    <title>Dashboard — Tesloiq</title>
     <script>
-      // Security Gate: Check for authenticated userId matching server schema structure
+      // Security Gate: Verify session parameters before loading DOM tree
       let currentUserId = localStorage.getItem('userId');
-
       if (!currentUserId) {
         window.location.replace('./Sign_In.html');
       }
-
       window.currentUserId = currentUserId;
     </script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; -webkit-tap-highlight-color: transparent; }
-        body { background-color: #0b0e14; color: #ffffff; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { background-color: #0b0e14; color: #ffffff; min-height: 100vh; padding: 24px; }
         
-        .app-container { width: 100%; max-width: 390px; height: 844px; background-color: #0d1117; border-radius: 40px; overflow: hidden; position: relative; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.7), 0 0 0 12px #1f242d; display: flex; flex-direction: column; }
+        .dashboard-container { max-width: 1200px; margin: 0 auto; }
         
-        @media (min-width: 769px) {
-            body { padding: 20px; }
-            .app-container { max-width: 1200px; height: 900px; border-radius: 24px; display: grid; grid-template-columns: 280px 1fr; }
-            .mobile-only { display: none !important; }
-            .desktop-sidebar { display: flex !important; }
-            .main-content { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
-            .view { padding: 24px 32px !important; }
-            .dashboard-grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: 24px; }
-        }
+        .nav-banner { display: flex; justify-content: space-between; align-items: center; padding: 16px 24px; background: #0d1117; border: 1px solid #21262d; border-radius: 16px; margin-bottom: 32px; }
+        .brand-logo { font-size: 20px; font-weight: 800; color: #fff; letter-spacing: 0.5px; }
+        .logout-btn { background: #21262d; color: #c9d1d9; border: 1px solid #30363d; padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; text-decoration: none; }
+        .logout-btn:hover { background: #30363d; color: #fff; }
 
-        /* Desktop Layout Componentry */
-        .desktop-sidebar { display: none; flex-direction: column; background-color: #12161f; border-right: 1px solid #21262d; padding: 30px 20px; }
-        .desktop-logo { font-size: 20px; font-weight: 800; color: #ffffff; margin-bottom: 35px; display: flex; align-items: center; gap: 10px; letter-spacing: 1px; }
-        .desktop-nav { display: flex; flex-direction: column; gap: 8px; flex: 1; }
-        .desktop-nav-item { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 14px; color: #8b949e; text-decoration: none; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
-        .desktop-nav-item.active, .desktop-nav-item:hover { background-color: #1f2633; color: #fff; }
-        .desktop-user-profile { display: flex; align-items: center; gap: 12px; padding-top: 16px; border-top: 1px solid #21262d; }
+        /* Invest Section Layout */
+        .invest-section-wrapper { padding: 24px; background-color: #0d1117; border-radius: 24px; border: 1px solid #21262d; margin-top: 24px; }
+        .section-header { margin-bottom: 20px; }
+        
+        .stocks-grid-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 32px; }
+        .stock-asset-card { background: #161b22; border: 1px solid #21262d; border-radius: 16px; padding: 20px; display: flex; flex-direction: column; justify-content: space-between; transition: border-color 0.2s; }
+        .stock-asset-card:hover { border-color: #30363d; }
+        
+        .invest-btn { margin-top: 16px; width: 100%; padding: 12px; background: #238636; border: none; color: #fff; border-radius: 10px; font-weight: 700; font-size: 13px; cursor: pointer; transition: background 0.2s; }
+        .invest-btn:hover { background: #2ea043; }
 
-        /* Mobile Layout Drawer Componentry */
-        .drawer-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 90; opacity: 0; visibility: hidden; transition: all 0.3s; }
-        .drawer-overlay.active { opacity: 1; visibility: visible; }
-        .drawer-menu { position: absolute; top: 0; left: -290px; width: 290px; height: 100%; background-color: #0d1117; z-index: 100; transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1); padding: 50px 20px; display: flex; flex-direction: column; border-right: 1px solid #21262d; }
-        .drawer-menu.active { left: 0; }
-        .drawer-brand { font-size: 18px; font-weight: 800; color: #fff; margin-bottom: 30px; display: flex; align-items: center; gap: 8px; }
-        .drawer-item { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 12px; color: #8b949e; text-decoration: none; font-size: 14px; font-weight: 600; cursor: pointer; }
-        .drawer-item.active { background-color: #1f2633; color: #fff; }
-
-        /* Shared Dashboard Components */
-        .main-content { flex: 1; position: relative; overflow: hidden; }
-        .view { display: none; height: 100%; overflow-y: auto; padding: 16px 16px 85px 16px; scrollbar-width: none; }
-        .view::-webkit-scrollbar { display: none; }
-        .view.active { display: block; }
-
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .header-left { display: flex; align-items: center; gap: 14px; }
-        .menu-btn { background: none; border: none; color: #fff; font-size: 20px; cursor: pointer; }
-        .title-area h1 { font-size: 20px; font-weight: 700; }
-        .title-area p { font-size: 12px; color: #8b949e; margin-top: 2px; }
-        .icon-btn { width: 38px; height: 38px; background-color: #161b22; border-radius: 50%; display: flex; justify-content: center; align-items: center; color: #8b949e; border: 1px solid #21262d; cursor: pointer; }
-
-        /* Interactive Swipeable Account Card Frame */
-        .card-slider-container { position: relative; width: 100%; overflow: hidden; margin-bottom: 16px; border-radius: 24px; }
-        .card-track { display: flex; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); width: 300%; }
-        .account-card { width: 33.333%; padding: 22px; background: linear-gradient(135deg, #161d26 0%, #0f141c 100%); border: 1px solid #212b3b; border-radius: 24px; position: relative; flex-shrink: 0; }
-        
-        .card-header-row { display: flex; justify-content: space-between; align-items: flex-start; }
-        .card-meta-title { font-size: 11px; font-weight: 800; color: #8b949e; letter-spacing: 1.5px; }
-        .card-sub-identifier { font-size: 11px; color: #6e7681; background: #1f2633; padding: 2px 8px; border-radius: 20px; }
-        .card-holder-name { font-size: 14px; color: #c9d1d9; font-weight: 600; margin-top: 4px; }
-        .card-indicator-badge { display: inline-flex; align-items: center; gap: 6px; background: rgba(46, 160, 67, 0.15); color: #3fb950; font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 20px; margin-top: 14px; }
-        .card-indicator-badge::before { content: ''; width: 6px; height: 6px; background-color: #3fb950; border-radius: 50%; }
-        
-        .card-balance-section { margin-top: 16px; text-align: center; }
-        .card-balance-lbl { font-size: 12px; color: #8b949e; }
-        .card-main-val { font-size: 32px; font-weight: 700; color: #fff; margin-top: 6px; letter-spacing: -0.5px; display: flex; align-items: center; justify-content: center; gap: 10px; }
-        .card-secondary-lbl { font-size: 11px; color: #6e7681; margin-top: 6px; }
-        
-        /* Indicators and Footers */
-        .slider-dots { display: flex; justify-content: center; gap: 6px; margin: 10px 0; }
-        .dot { width: 6px; height: 6px; background: #30363d; border-radius: 50%; transition: all 0.2s; }
-        .dot.active { background: #58a6ff; width: 14px; border-radius: 10px; }
-        .swipe-hint { font-size: 10px; color: #484f58; text-align: center; width: 100%; display: block; margin-bottom: 12px; }
-
-        /* Interactive Grid Layout */
-        .actions-matrix { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 24px; }
-        .matrix-node { background-color: #12161f; border: 1px solid #1f2533; border-radius: 16px; padding: 14px 8px; display: flex; flex-direction: column; align-items: center; gap: 8px; cursor: pointer; transition: background-color 0.2s; }
-        .matrix-node:hover { background-color: #1c2331; }
-        .node-icon-wrapper { width: 40px; height: 40px; border-radius: 12px; display: flex; justify-content: center; align-items: center; font-size: 16px; }
-        .matrix-node span { font-size: 11px; color: #c9d1d9; font-weight: 500; }
-        
-        .node-clr-deposit { background: rgba(46, 160, 67, 0.1); color: #3fb950; }
-        .node-clr-withdraw { background: rgba(248, 81, 73, 0.1); color: #f85149; }
-        .node-clr-invest { background: rgba(56, 139, 253, 0.1); color: #388bfd; }
-        .node-clr-portfolio { background: rgba(163, 113, 247, 0.1); color: #a371f7; }
-        .node-clr-stocks { background: rgba(234, 76, 137, 0.1); color: #ea4c89; }
-        .node-clr-membership { background: rgba(210, 153, 34, 0.1); color: #d29922; }
-        .node-clr-shop { background: rgba(0, 209, 178, 0.1); color: #00d1b2; }
-        .node-clr-news { background: rgba(255, 193, 7, 0.1); color: #ffc107; }
-
-        /* Chart Framework Components */
-        .market-card-frame { background-color: #12161f; border: 1px solid #1f2533; border-radius: 20px; padding: 16px; margin-bottom: 24px; }
-        .market-meta-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-        .market-title-group { display: flex; align-items: center; gap: 8px; }
-        .live-pulse { width: 6px; height: 6px; background-color: #3fb950; border-radius: 50%; display: inline-block; animation: pulse 1.8s infinite; }
-        @keyframes pulse { 0% { opacity: 0.3; } 50% { opacity: 1; } 100% { opacity: 0.3; } }
-        
-        .market-selector-pill { display: flex; background: #0d1117; border: 1px solid #21262d; border-radius: 20px; padding: 2px; }
-        .selector-btn { background: none; border: none; color: #8b949e; padding: 6px 14px; font-size: 11px; font-weight: 600; border-radius: 18px; cursor: pointer; }
-        .selector-btn.active { background: #21262d; color: #fff; }
-        
-        .asset-ticker-summary { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-        .ticker-title { font-size: 18px; font-weight: 700; }
-        .ticker-pricing { display: flex; align-items: center; gap: 8px; }
-        .ticker-amt { font-size: 18px; font-weight: 700; }
-        .ticker-change { font-size: 11px; font-weight: 600; color: #3fb950; background: rgba(46, 160, 67, 0.15); padding: 2px 6px; border-radius: 6px; }
-        
-        .chart-timeframe-row { display: flex; justify-content: space-between; margin-top: 14px; background: #0d1117; border-radius: 10px; padding: 2px; }
-        .tf-btn { flex: 1; background: none; border: none; color: #6e7681; font-size: 10px; font-weight: 700; padding: 8px 0; border-radius: 8px; cursor: pointer; }
-        .tf-btn.active { background: #1f2533; color: #fff; }
-
-        /* Membership Tier Structural Layout */
-        .membership-banner-offer { background: linear-gradient(135deg, #1f2533 0%, #12161f 100%); border: 1px solid #2d364f; border-radius: 20px; padding: 20px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; cursor: pointer; }
-        .membership-banner-offer h4 { font-size: 14px; font-weight: 700; margin-bottom: 4px; color: #fff; }
-        .membership-banner-offer p { font-size: 11px; color: #8b949e; line-height: 1.4; }
-        
-        .membership-tier-card { background: #12161f; border: 1px solid #21262d; border-radius: 24px; padding: 24px; margin-bottom: 20px; position: relative; overflow: hidden; }
-        .membership-tier-card::before { content: ''; position: absolute; top: 0; right: 0; width: 120px; height: 120px; background: radial-gradient(circle, rgba(210,153,34,0.15) 0%, transparent 70%); pointer-events: none; }
-        .tier-header-meta { display: flex; justify-content: space-between; align-items: center; }
-        .tier-name-title { font-size: 18px; font-weight: 700; letter-spacing: 0.5px; }
-        .tier-premium-price { font-size: 26px; font-weight: 800; margin: 14px 0; color: #fff; }
-        
-        .tier-perks-list { list-style: none; margin: 18px 0; }
-        .tier-perk-item { display: flex; align-items: flex-start; gap: 10px; font-size: 12px; color: #c9d1d9; margin-bottom: 10px; line-height: 1.4; }
-        .tier-perk-item i { color: #3fb950; font-size: 11px; margin-top: 2px; }
-        .tier-action-trigger { width: 100%; padding: 14px; border-radius: 14px; border: none; background-color: #21262d; color: #fff; font-weight: 700; font-size: 13px; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px; transition: background-color 0.2s; }
-        .tier-action-trigger:hover { background-color: #30363d; }
-
-        /* History Data Framework Components */
-        .history-section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
-        .history-section-header h3 { font-size: 14px; font-weight: 700; }
-        .history-view-all-link { font-size: 12px; color: #58a6ff; text-decoration: none; cursor: pointer; }
-        .transaction-table { width: 100%; border-collapse: collapse; }
-        .transaction-table th { text-align: left; font-size: 10px; color: #484f58; padding-bottom: 8px; font-weight: 700; letter-spacing: 0.5px; }
-        .transaction-table td { padding: 14px 0; border-top: 1px solid #21262d; font-size: 12px; vertical-align: middle; }
-        
-        .tx-badge-type { padding: 4px 8px; border-radius: 6px; font-size: 9px; font-weight: 700; text-transform: uppercase; display: inline-block; letter-spacing: 0.5px; }
-        .tx-badge-type.deposit { background: rgba(46, 160, 67, 0.12); color: #3fb950; }
-        .tx-badge-type.withdraw { background: rgba(248, 81, 73, 0.12); color: #f85149; }
-        .tx-desc-cell { font-weight: 500; color: #c9d1d9; }
-        .tx-desc-subtext { font-size: 10px; color: #6e7681; margin-top: 2px; }
-        .tx-amt-cell { font-weight: 700; font-size: 13px; text-align: right; }
-        .tx-amt-cell.deposit { color: #3fb950; }
-        .tx-amt-cell.withdraw { color: #f85149; }
-
-        /* Modals Structure Layout */
-        .modal-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 200; display: flex; justify-content: center; align-items: flex-end; opacity: 0; visibility: hidden; transition: all 0.3s; }
-        .modal-overlay.active { opacity: 1; visibility: visible; }
-        .modal-body { width: 100%; background-color: #12161f; border-top-left-radius: 24px; border-top-right-radius: 24px; padding: 24px; border: 1px solid #21262d; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-        .modal-overlay.active .modal-body { transform: translateY(0); }
-        .modal-title { font-size: 16px; font-weight: 700; margin-bottom: 18px; display: flex; justify-content: space-between; align-items: center; }
-        .modal-close { background: none; border: none; color: #8b949e; font-size: 18px; cursor: pointer; }
-        
-        .form-group { margin-bottom: 16px; }
-        .form-label { display: block; font-size: 11px; color: #8b949e; margin-bottom: 6px; font-weight: 600; }
-        .form-input { width: 100%; padding: 12px 14px; background-color: #0d1117; border: 1px solid #21262d; border-radius: 12px; color: #fff; font-size: 13px; }
-        .form-input:focus { outline: none; border-color: #388bfd; }
-
-        /* Global Sticky Navigation Controls */
-        .bottom-nav { position: absolute; bottom: 0; left: 0; right: 0; height: 68px; background-color: #12161f; border-top: 1px solid #21262d; display: flex; justify-content: space-around; align-items: center; padding-bottom: 12px; z-index: 80; }
-        .nav-item { display: flex; flex-direction: column; align-items: center; color: #8b949e; font-size: 10px; text-decoration: none; cursor: pointer; gap: 4px; font-weight: 500; }
-        .nav-item.active { color: #58a6ff; }
-        .nav-item i { font-size: 18px; }
-        .user-avatar { width: 34px; height: 34px; border-radius: 50%; background-color: #f0e6d2; display: flex; justify-content: center; align-items: center; font-weight: 700; color: #000; font-size: 12px; }
+        /* Active Portfolio Elements */
+        .table-responsive-wrapper { width: 100%; overflow-x: auto; background: #161b22; border: 1px solid #21262d; border-radius: 14px; }
+        .portfolio-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
+        .portfolio-table th { padding: 14px 16px; font-weight: 600; color: #8b949e; background: rgba(0,0,0,0.1); border-bottom: 1px solid #21262d; }
+        .portfolio-table td { padding: 14px 16px; border-bottom: 1px solid #21262d; color: #c9d1d9; }
+        .portfolio-table tr:last-child td { border-bottom: none; }
     </style>
 </head>
 <body>
 
-<div class="app-container">
-    <!-- DESKTOP PERSISTENT SIDEBAR -->
-    <div class="desktop-sidebar">
-        <div class="desktop-logo"><i class="fa-solid fa-bolt" style="color:#58a6ff;"></i> TESLOIQ</div>
-        <div class="desktop-nav">
-            <a class="desktop-nav-item active" onclick="switchView('dashboardView')"><i class="fa-solid fa-house"></i> Dashboard</a>
-            <a class="desktop-nav-item" onclick="switchView('membershipView')"><i class="fa-solid fa-crown"></i> Membership</a>
-            <a class="desktop-nav-item" onclick="openDepositModal()"><i class="fa-solid fa-arrow-down"></i> Deposit Funds</a>
-            <a class="desktop-nav-item" onclick="openWithdrawModal()"><i class="fa-solid fa-arrow-up"></i> Withdraw Funds</a>
-        </div>
-        <div class="desktop-user-profile">
-            <div class="user-avatar" id="desktopUserAvatar">U</div>
-            <div>
-                <div style="font-size: 13px; font-weight: 700;" id="desktopUserName">Investor Account</div>
-            </div>
-        </div>
-    </div>
+<div class="dashboard-container">
+    <!-- Navigation Architecture -->
+    <header class="nav-banner">
+        <div class="brand-logo">Tesloiq Engine</div>
+        <button class="logout-btn" onclick="executeSecureSignOut()">Sign Out</button>
+    </header>
 
-    <!-- MOBILE DRAWER OVERLAY FRAMEWORK -->
-    <div class="drawer-overlay mobile-only" id="drawerOverlay" onclick="toggleDrawer()"></div>
-    <div class="drawer-menu mobile-only" id="drawerMenu">
-        <div class="drawer-brand"><i class="fa-solid fa-bolt" style="color:#58a6ff;"></i> TESLOIQ</div>
-        <div style="display: flex; flex-direction: column; gap: 6px; flex: 1;">
-            <a class="drawer-item active" id="m-nav-dash" onclick="switchView('dashboardView'); toggleDrawer();"><i class="fa-solid fa-house"></i> Dashboard</a>
-            <a class="drawer-item" id="m-nav-member" onclick="switchView('membershipView'); toggleDrawer();"><i class="fa-solid fa-crown"></i> Membership</a>
-            <a class="drawer-item" onclick="toggleDrawer(); openDepositModal();"><i class="fa-solid fa-arrow-down"></i> Deposit</a>
-            <a class="drawer-item" onclick="toggleDrawer(); openWithdrawModal();"><i class="fa-solid fa-arrow-up"></i> Withdraw</a>
+    <!-- Investment Management Core -->
+    <section class="invest-section-wrapper">
+        <div class="section-header">
+            <h2 style="font-size: 20px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 8px;">
+                <i class="fa-solid fa-chart-line" style="color: #58a6ff;"></i> Available Equity Stock Assets
+            </h2>
+            <p style="font-size: 13px; color: #8b949e; margin-top: 4px;">Select an asset ecosystem below to allocate your capital reserves.</p>
         </div>
-    </div>
 
-    <!-- MAIN INTERACTIVE CONTENT AREA -->
-    <div class="main-content">
-        <!-- VIEW 1: DASHBOARD ECOSYSTEM -->
-        <div class="view active" id="dashboardView">
-            <div class="header">
-                <div class="header-left">
-                    <button class="menu-btn mobile-only" onclick="toggleDrawer()"><i class="fa-solid fa-bars"></i></button>
-                    <div class="title-area">
-                        <h1>Dashboard</h1>
-                        <p id="welcomeUserText">Welcome back, Investor</p>
-                    </div>
-                </div>
-                <div class="header-right">
-                    <div class="icon-btn" onclick="handleLogout()"><i class="fa-solid fa-right-from-bracket"></i></div>
-                </div>
-            </div>
-
-            <div class="dashboard-grid">
+        <!-- Available Stocks Grid Matrix -->
+        <div class="stocks-grid-container">
+            <!-- SpaceX -->
+            <div class="stock-asset-card">
                 <div>
-                    <!-- Swipeable Card Slider Window Frame -->
-                    <div class="card-slider-container" id="sliderContainer">
-                        <div class="card-track" id="cardTrack">
-                            
-                            <!-- Slide Element 1: Available Balance Data Screen -->
-                            <div class="account-card">
-                                <div class="card-header-row">
-                                    <div>
-                                        <div class="card-meta-title">TESLOIQ</div>
-                                        <div class="card-holder-name" id="cardUserName">Investor Account</div>
-                                    </div>
-                                    <div class="card-sub-identifier">Trading Account •••• 0082</div>
-                                </div>
-                                <div class="card-indicator-badge">Active</div>
-                                <div class="card-balance-section">
-                                    <div class="card-balance-lbl">Available Balance</div>
-                                    <div class="card-main-val">
-                                        <span id="balanceText">$0.00</span>
-                                        <i class="fa-regular fa-eye eye-icon" style="font-size:16px; color:#8b949e; cursor:pointer;" onclick="toggleBalanceVisibility(event)"></i>
-                                    </div>
-                                    <div class="card-secondary-lbl">Available for trading</div>
-                                </div>
-                            </div>
-
-                            <!-- Slide Element 2: Total Investments Data Screen -->
-                            <div class="account-card">
-                                <div class="card-header-row">
-                                    <div>
-                                        <div class="card-meta-title">INVESTMENT PORTFOLIO</div>
-                                        <div class="card-holder-name" id="portfolioUserName">Investor Account</div>
-                                    </div>
-                                    <div class="card-sub-identifier">Stocks & Crypto Portfolio</div>
-                                </div>
-                                <div class="card-indicator-badge">Active</div>
-                                <div class="card-balance-section">
-                                    <div class="card-balance-lbl">Total Investments</div>
-                                    <div class="card-main-val" id="portfolioText">0</div>
-                                    <div class="card-secondary-lbl">Stocks & Crypto assets</div>
-                                </div>
-                            </div>
-
-                            <!-- Slide Element 3: Profit and Loss Data Screen -->
-                            <div class="account-card">
-                                <div class="card-header-row">
-                                    <div>
-                                        <div class="card-meta-title">PROFIT & LOSS</div>
-                                        <div class="card-holder-name" id="plUserName">Investor Account</div>
-                                    </div>
-                                    <div class="card-sub-identifier">Performance +0%</div>
-                                </div>
-                                <div class="card-indicator-badge" style="background:rgba(46,160,67,0.15); color:#3fb950;">Profit</div>
-                                <div class="card-balance-section">
-                                    <div class="card-balance-lbl">Total Profit/Loss</div>
-                                    <div class="card-main-val" style="color:#3fb950;" id="plText">+$0.00</div>
-                                    <div class="card-secondary-lbl">All time record</div>
-                                </div>
-                            </div>
-
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+                        <div>
+                            <h3 style="font-size: 16px; font-weight: 700; color: #fff;">SpaceX</h3>
+                            <span style="font-size: 11px; color: #8b949e; font-weight: 600; text-transform: uppercase;">Space Exploration Technologies</span>
                         </div>
+                        <span style="background: rgba(88, 166, 255, 0.1); color: #58a6ff; padding: 4px 8px; border-radius: 8px; font-size: 12px; font-weight: 700;">$XSPC</span>
                     </div>
-                    
-                    <!-- Slider Metadata Anchors -->
-                    <div class="slider-dots">
-                        <div class="dot active"></div>
-                        <div class="dot"></div>
-                        <div class="dot"></div>
-                    </div>
-                    <span class="swipe-hint"><i class="fa-solid fa-left-right"></i> Swipe to switch between accounts</span>
-
-                    <!-- Navigational Multi-Row Layout Matrix -->
-                    <div class="actions-matrix">
-                        <div class="matrix-node" onclick="openDepositModal()">
-                            <div class="node-icon-wrapper node-clr-deposit"><i class="fa-solid fa-arrow-down"></i></div>
-                            <span>Deposit</span>
-                        </div>
-                        <div class="matrix-node" onclick="openWithdrawModal()">
-                            <div class="node-icon-wrapper node-clr-withdraw"><i class="fa-solid fa-arrow-up"></i></div>
-                            <span>Withdraw</span>
-                        </div>
-                        <div class="matrix-node" onclick="switchView('membershipView')">
-                            <div class="node-icon-wrapper node-clr-invest"><i class="fa-solid fa-paper-plane"></i></div>
-                            <span>Invest</span>
-                        </div>
-                        <div class="matrix-node" onclick="switchView('dashboardView')">
-                            <div class="node-icon-wrapper node-clr-portfolio"><i class="fa-solid fa-chart-pie"></i></div>
-                            <span>Portfolio</span>
-                        </div>
-                        <div class="matrix-node" onclick="switchView('dashboardView')">
-                            <div class="node-icon-wrapper node-clr-stocks"><i class="fa-solid fa-arrow-trend-up"></i></div>
-                            <span>Stocks</span>
-                        </div>
-                        <div class="matrix-node" onclick="switchView('membershipView')">
-                            <div class="node-icon-wrapper node-clr-membership"><i class="fa-solid fa-crown"></i></div>
-                            <span>Membership</span>
-                        </div>
-                        <div class="matrix-node" onclick="switchView('membershipView')">
-                            <div class="node-icon-wrapper node-clr-shop"><i class="fa-solid fa-bag-shopping"></i></div>
-                            <span>Shop</span>
-                        </div>
-                        <div class="matrix-node" onclick="switchView('dashboardView')">
-                            <div class="node-icon-wrapper node-clr-news"><i class="fa-solid fa-newspaper"></i></div>
-                            <span>News</span>
-                        </div>
-                    </div>
+                    <div style="font-size: 22px; font-weight: 800; color: #fff; margin-bottom: 4px;">$420.50 <span style="font-size: 13px; color: #2ea043; font-weight: 600;">+3.45%</span></div>
                 </div>
+                <button onclick="openInvestmentBuyModal('SpaceX', 420.50)" class="invest-btn">Invest in SpaceX</button>
+            </div>
 
+            <!-- OpenAI -->
+            <div class="stock-asset-card">
                 <div>
-                    <!-- Market Card Window Componentry -->
-                    <div class="market-card-frame">
-                        <div class="market-meta-header">
-                            <div class="market-title-group">
-                                <span style="font-size: 13px; font-weight: 700; color: #fff;">Live Market</span>
-                                <span style="font-size: 9px; font-weight: 700; color: #3fb950; background: rgba(46,160,67,0.12); padding: 2px 6px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px;">
-                                    <span class="live-pulse"></span> LIVE
-                                </span>
-                            </div>
-                            <div class="market-selector-pill">
-                                <button class="selector-btn active">Stocks</button>
-                                <button class="selector-btn">Crypto</button>
-                            </div>
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+                        <div>
+                            <h3 style="font-size: 16px; font-weight: 700; color: #fff;">OpenAI</h3>
+                            <span style="font-size: 11px; color: #8b949e; font-weight: 600; text-transform: uppercase;">Artificial Intelligence Research</span>
                         </div>
-
-                        <div class="asset-ticker-summary">
-                            <div class="ticker-title" style="font-size: 14px; color: #8b949e;">TSLA — Tesla Inc.</div>
-                            <div class="ticker-pricing">
-                                <span class="ticker-amt">$444.81</span>
-                                <span class="ticker-change">+3.58%</span>
-                            </div>
-                        </div>
-
-                        <!-- Technical Visualization Frame -->
-                        <div style="width: 100%; height: 140px; position: relative;">
-                            <canvas id="marketMetricChart"></canvas>
-                        </div>
-
-                        <div class="chart-timeframe-row">
-                            <button class="tf-btn">1D</button>
-                            <button class="tf-btn active">1W</button>
-                            <button class="tf-btn">1M</button>
-                            <button class="tf-btn">3M</button>
-                            <button class="tf-btn">1Y</button>
-                            <button class="tf-btn">ALL</button>
-                        </div>
+                        <span style="background: rgba(88, 166, 255, 0.1); color: #58a6ff; padding: 4px 8px; border-radius: 8px; font-size: 12px; font-weight: 700;">$AIOX</span>
                     </div>
-
-                    <!-- Membership Tier Upgrade Callout -->
-                    <div class="membership-banner-offer" onclick="switchView('membershipView')">
-                        <div style="max-width: 80%;">
-                            <h4>Get Your Membership Card</h4>
-                            <p>Apply for Silver, Gold or Platinum to unlock Tesla car shopping privileges.</p>
-                        </div>
-                        <div class="icon-btn" style="background:#fff; color:#0d1117; border:none;"><i class="fa-solid fa-arrow-right"></i></div>
-                    </div>
-
-                    <!-- Operational History Logs Tracker Framework -->
-                    <div class="history-section-header">
-                        <h3>Recent Transactions</h3>
-                        <a class="history-view-all-link">View All</a>
-                    </div>
-                    <table class="transaction-table">
-                        <thead>
-                            <tr>
-                                <th>TYPE</th>
-                                <th>DESCRIPTION</th>
-                                <th style="text-align: right;">AMOUNT</th>
-                            </tr>
-                        </thead>
-                        <tbody id="transactionList">
-                            <tr>
-                                <td colspan="3" style="text-align:center; color:#8b949e; padding: 20px 0;">Synchronizing network parameters...</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                    <div style="font-size: 22px; font-weight: 800; color: #fff; margin-bottom: 4px;">$295.15 <span style="font-size: 13px; color: #2ea043; font-weight: 600;">+5.12%</span></div>
                 </div>
+                <button onclick="openInvestmentBuyModal('OpenAI', 295.15)" class="invest-btn">Invest in OpenAI</button>
+            </div>
+
+            <!-- NeuralLink -->
+            <div class="stock-asset-card">
+                <div>
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+                        <div>
+                            <h3 style="font-size: 16px; font-weight: 700; color: #fff;">NeuralLink</h3>
+                            <span style="font-size: 11px; color: #8b949e; font-weight: 600; text-transform: uppercase;">Brain-Machine Interfaces</span>
+                        </div>
+                        <span style="background: rgba(88, 166, 255, 0.1); color: #58a6ff; padding: 4px 8px; border-radius: 8px; font-size: 12px; font-weight: 700;">$NLNK</span>
+                    </div>
+                    <div style="font-size: 22px; font-weight: 800; color: #fff; margin-bottom: 4px;">$188.00 <span style="font-size: 13px; color: #8b949e; font-weight: 600;">0.00%</span></div>
+                </div>
+                <button onclick="openInvestmentBuyModal('NeuralLink', 188.00)" class="invest-btn">Invest in NeuralLink</button>
             </div>
         </div>
 
-        <!-- VIEW 2: TIERS & MEMBERSHIP PLANS MANAGEMENTS -->
-        <div class="view" id="membershipView">
-            <div class="header">
-                <div class="header-left">
-                    <button class="menu-btn" onclick="switchView('dashboardView')"><i class="fa-solid fa-arrow-left"></i></button>
-                    <div class="title-area">
-                        <h1>Membership Cards</h1>
-                        <p>Select a membership tier to unlock privileges</p>
-                    </div>
-                </div>
+        <hr style="border: 0; height: 1px; background: #21262d; margin-bottom: 28px;">
+
+        <!-- Active Investments Tracker -->
+        <div class="active-investments-panel">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <h3 style="font-size: 16px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-briefcase" style="color: #2ea043;"></i> Your Active Stock Positions
+                </h3>
+                <span id="portfolioValueBadge" style="font-size: 12px; color: #8b949e; font-weight: 600; background: #161b22; padding: 6px 12px; border-radius: 20px; border: 1px solid #21262d;">
+                    Total Allocated: Calculating...
+                </span>
             </div>
 
-            <div style="margin-top: 10px;">
-                <!-- Card Option A: Gold Model Tier Layout -->
-                <div class="membership-tier-card" style="border-color: rgba(210,153,34,0.3);">
-                    <div class="tier-header-meta">
-                        <div>
-                            <span style="font-size: 10px; color: #d29922; font-weight: 800; letter-spacing: 1.5px;">GOLD TIER</span>
-                            <div class="tier-name-title" style="margin-top: 4px; color: #d29922;">Gold Member Card</div>
-                        </div>
-                        <i class="fa-solid fa-crown" style="color: #d29922; font-size: 20px;"></i>
-                    </div>
-                    <div class="tier-premium-price">$7,500</div>
-                    <div style="font-size: 11px; font-weight: 700; color: #8b949e; letter-spacing: 0.5px; border-top: 1px solid #21262d; padding-top: 12px;">BENEFITS</div>
-                    <ul class="tier-perks-list">
-                        <li class="tier-perk-item"><i class="fa-solid fa-check"></i> Access to all Tesla models</li>
-                        <li class="tier-perk-item"><i class="fa-solid fa-check"></i> 10% bulk purchase discount tiering</li>
-                        <li class="tier-perk-item"><i class="fa-solid fa-check"></i> VIP priority allocation order metrics</li>
-                        <li class="tier-perk-item"><i class="fa-solid fa-check"></i> Exclusive member event invitations</li>
-                        <li class="tier-perk-item"><i class="fa-solid fa-check"></i> Dedicated personal account manager access</li>
-                        <li class="tier-perk-item"><i class="fa-solid fa-check"></i> Early access windows to limited editions</li>
-                    </ul>
-                    <button class="tier-action-trigger" style="background: #d29922; color: #000;" onclick="applyMembershipPlan('Gold', 7500)">
-                        <i class="fa-solid fa-wallet"></i> Apply — $7,500
-                    </button>
-                </div>
-
-                <!-- Card Option B: Platinum Model Tier Layout -->
-                <div class="membership-tier-card" style="border-color: rgba(139,148,158,0.3);">
-                    <div class="tier-header-meta">
-                        <div>
-                            <span style="font-size: 10px; color: #c9d1d9; font-weight: 800; letter-spacing: 1.5px;">PLATINUM TIER</span>
-                            <div class="tier-name-title" style="margin-top: 4px; color: #c9d1d9;">Platinum Member Card</div>
-                        </div>
-                        <i class="fa-solid fa-gem" style="color: #c9d1d9; font-size: 20px;"></i>
-                    </div>
-                    <div class="tier-premium-price">$15,000</div>
-                    <div style="font-size: 11px; font-weight: 700; color: #8b949e; letter-spacing: 0.5px; border-top: 1px solid #21262d; padding-top: 12px;">BENEFITS</div>
-                    <ul class="tier-perks-list">
-                        <li class="tier-perk-item"><i class="fa-solid fa-check"></i> Access to all Tesla models + Cybertruck</li>
-                        <li class="tier-perk-item"><i class="fa-solid fa-check"></i> 15% bulk purchase discount tiering</li>
-                        <li class="tier-perk-item"><i class="fa-solid fa-check"></i> First priority on all order metrics globally</li>
-                        <li class="tier-perk-item"><i class="fa-solid fa-check"></i> All-inclusive corporate hospitality passes</li>
-                    </ul>
-                    <button class="tier-action-trigger" style="background: #c9d1d9; color: #000;" onclick="applyMembershipPlan('Platinum', 15000)">
-                        <i class="fa-solid fa-wallet"></i> Apply — $15,000
-                    </button>
-                </div>
-
-                <!-- Card Option C: Silver Model Tier Layout -->
-                <div class="membership-tier-card" style="border-color: rgba(110,118,129,0.3);">
-                    <div class="tier-header-meta">
-                        <div>
-                            <span style="font-size: 10px; color: #8b949e; font-weight: 800; letter-spacing: 1.5px;">SILVER TIER</span>
-                            <div class="tier-name-title" style="margin-top: 4px; color: #8b949e;">Silver Member Card</div>
-                        </div>
-                        <i class="fa-solid fa-award" style="color: #8b949e; font-size: 20px;"></i>
-                    </div>
-                    <div class="tier-premium-price">$2,500</div>
-                    <div style="font-size: 11px; font-weight: 700; color: #8b949e; letter-spacing: 0.5px; border-top: 1px solid #21262d; padding-top: 12px;">BENEFITS</div>
-                    <ul class="tier-perks-list">
-                        <li class="tier-perk-item"><i class="fa-solid fa-check"></i> Access to Model 3 & Model Y allocations</li>
-                        <li class="tier-perk-item"><i class="fa-solid fa-check"></i> 5% base asset discount adjustments</li>
-                        <li class="tier-perk-item"><i class="fa-solid fa-check"></i> Monthly portfolio insight logs summary</li>
-                    </ul>
-                    <button class="tier-action-trigger" style="background: #8b949e; color: #000;" onclick="applyMembershipPlan('Silver', 2500)">
-                        <i class="fa-solid fa-wallet"></i> Apply — $2,500
-                    </button>
-                </div>
+            <div class="table-responsive-wrapper">
+                <table class="portfolio-table">
+                    <thead>
+                        <tr>
+                            <th>Asset Name</th>
+                            <th>Position Vol.</th>
+                            <th>Avg. Entry Price</th>
+                            <th>Current Value</th>
+                            <th style="text-align: right;">Performance PnL</th>
+                        </tr>
+                    </thead>
+                    <tbody id="activeInvestmentsTableBody">
+                        <tr>
+                            <td colspan="5" style="padding: 24px; text-align: center; color: #8b949e; font-style: italic;">
+                                <i class="fa-solid fa-folder-open" style="display: block; font-size: 20px; margin-bottom: 8px; color: #30363d;"></i>
+                                No active equity stock configurations discovered in this ledger profile.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
-    </div>
-
-    <!-- MOBILE SYSTEM PERSISTENT NAVIGATION BAR TOOLBAR -->
-    <div class="bottom-nav mobile-only">
-        <a class="nav-item" onclick="openDepositModal()"><i class="fa-solid fa-wallet"></i><span>Deposit</span></a>
-        <a class="nav-item" onclick="switchView('membershipView')"><i class="fa-solid fa-arrow-down-up-lock"></i><span>Invest</span></a>
-        <a class="nav-item active" id="m-tabs-home" onclick="switchView('dashboardView')"><i class="fa-solid fa-house"></i><span>Home</span></a>
-        <a class="nav-item" onclick="switchView('membershipView')"><i class="fa-solid fa-crown"></i><span>Premium</span></a>
-        <a class="nav-item"><div class="user-avatar" id="mobileUserAvatar">U</div><span>Account</span></a>
-    </div>
-
-    <!-- SYSTEM INTERACTIVE MODALS ROOT WRAPPER FRAME -->
-    <div class="modal-overlay" id="systemModalContainer">
-        <div class="modal-body">
-            <div class="modal-title">
-                <span id="modalHeaderTitle">System Action</span>
-                <button class="modal-close" onclick="closeSystemModal()"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-            <div id="modalTargetInterface"></div>
-        </div>
-    </div>
+    </section>
 </div>
 
 <script>
-    // System Network Interfacing Constants
     const API_BASE_URL = 'https://tesloiq.onrender.com/api';
-    let localCalculatedAccountBalance = 0.00;
-    let localSecurityMaskingStatus = false;
-    let liveRenderedChartInstance = null;
-
-    // Accounts Swipe Engine State Context Properties
-    let currentCardIndex = 0;
-    let swipeTouchStartX = 0;
-    let swipeTouchEndX = 0;
 
     window.addEventListener('DOMContentLoaded', () => {
-        initializeApplicationEcosystem();
-        configureInteractiveSwipeTrack();
+        if (window.currentUserId) {
+            loadUserActiveStockPositions();
+        }
     });
 
-    function initializeApplicationEcosystem() {
-        if(window.currentUserId) {
-            fetchSystemAccountMetrics();
-            renderMarketTechnicalChart();
-        }
-    }
-
-    // Server-Side Data Binding Logic
-    async function fetchSystemAccountMetrics() {
+    async function loadUserActiveStockPositions() {
+        const dataTableContainer = document.getElementById('activeInvestmentsTableBody');
+        const summaryBadge = document.getElementById('portfolioValueBadge');
+        
         try {
-            const endpointResponse = await fetch(`${API_BASE_URL}/user/profile/${window.currentUserId}`);
-            if (!endpointResponse.ok) throw new Error("Synchronization context error.");
+            const response = await fetch(`${API_BASE_URL}/transactions?userId=${window.currentUserId}`);
+            if (!response.ok) throw new Error("Could not compute ledger calculations.");
             
-            const mappingPayload = await fetchResultJsonData(endpointResponse);
-            localCalculatedAccountBalance = mappingPayload.balance || 0;
-            const authenticatedUserDescriptor = mappingPayload.name || "Investor";
+            const historyData = await response.json();
+            const stockPositions = historyData.filter(item => item.type === 'investment' || item.desc.includes('Stock'));
 
-            updateDynamicDashboardUI(authenticatedUserDescriptor);
-            fetchAssetTransactionLogs();
-        } catch(networkErrorExecution) {
-            console.error("Critical Profile Error:", networkErrorExecution);
-        }
-    }
-
-    async function fetchResultJsonData(responseObject) {
-        return await responseObject.json();
-    }
-
-    function updateDynamicDashboardUI(userNameString) {
-        document.getElementById('desktopUserName').innerText = userNameString;
-        document.getElementById('desktopUserAvatar').innerText = userNameString.substring(0,2).toUpperCase();
-        document.getElementById('mobileUserAvatar').innerText = userNameString.substring(0,1).toUpperCase();
-        document.getElementById('welcomeUserText').innerText = `Welcome back, ${userNameString}`;
-        document.getElementById('cardUserName').innerText = userNameString;
-        document.getElementById('portfolioUserName').innerText = userNameString;
-        document.getElementById('plUserName').innerText = userNameString;
-        
-        refreshDisplayedBalanceString();
-    }
-
-    function refreshDisplayedBalanceString() {
-        document.getElementById('balanceText').innerText = localSecurityMaskingStatus 
-            ? '$ ••••••••' 
-            : `$${localCalculatedAccountBalance.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
-    }
-
-    function toggleBalanceVisibility(domEventContext) {
-        domEventContext.stopPropagation();
-        localSecurityMaskingStatus = !localSecurityMaskingStatus;
-        refreshDisplayedBalanceString();
-    }
-
-    // Multi-View Navigation Management Matrix
-    function switchView(viewElementId) {
-        document.querySelectorAll('.view').forEach(viewDomNode => viewDomNode.classList.remove('active'));
-        document.getElementById(viewElementId).classList.add('active');
-        
-        // Sync State Modifiers
-        document.querySelectorAll('.desktop-nav-item, .drawer-item, .nav-item').forEach(btn => btn.classList.remove('active'));
-        
-        if(viewElementId === 'dashboardView') {
-            document.querySelector('.desktop-nav-item:nth-child(1)').classList.add('active');
-            document.getElementById('m-nav-dash').classList.add('active');
-            document.getElementById('m-tabs-home').classList.add('active');
-        } else if(viewElementId === 'membershipView') {
-            document.querySelector('.desktop-nav-item:nth-child(2)').classList.add('active');
-            document.getElementById('m-nav-member').classList.add('active');
-        }
-    }
-
-    function toggleDrawer() {
-        document.getElementById('drawerOverlay').classList.toggle('active');
-        document.getElementById('drawerMenu').classList.toggle('active');
-    }
-
-    // Swipeable Multi-Account Track Logics
-    function configureInteractiveSwipeTrack() {
-        const sliderWindow = document.getElementById('sliderContainer');
-        
-        sliderWindow.addEventListener('touchstart', e => {
-            swipeTouchStartX = e.changedTouches[0].screenX;
-        }, { passive: true });
-
-        sliderWindow.addEventListener('touchend', e => {
-            swipeTouchEndX = e.changedTouches[0].screenX;
-            evaluateSwipeDirectionMovement();
-        }, { passive: true });
-    }
-
-    function evaluateSwipeDirectionMovement() {
-        const structuralDistanceThreshold = 50;
-        if (swipeTouchStartX - swipeTouchEndX > structuralDistanceThreshold) {
-            // Swiped Left -> Forward Page Index
-            if(currentCardIndex < 2) updateSliderPositionIndex(currentCardIndex + 1);
-        } else if (swipeTouchEndX - swipeTouchStartX > structuralDistanceThreshold) {
-            // Swiped Right -> Reverse Page Index
-            if(currentCardIndex > 0) updateSliderPositionIndex(currentCardIndex - 1);
-        }
-    }
-
-    function updateSliderPositionIndex(targetIndexValue) {
-        currentCardIndex = targetIndexValue;
-        document.getElementById('cardTrack').style.transform = `translateX(-${currentCardIndex * 33.3333}%)`;
-        
-        const dotNodesArray = document.querySelectorAll('.slider-dots .dot');
-        dotNodesArray.forEach(dot => dot.classList.remove('active'));
-        dotNodesArray[currentCardIndex].classList.add('active');
-    }
-
-    // Modal Operations Engine Core Controls
-    function openDepositModal() {
-        document.getElementById('modalHeaderTitle').innerText = 'Deposit Funds';
-        document.getElementById('modalTargetInterface').innerHTML = `
-            <div class="form-group"><label class="form-label">Payment Gateway Mode</label><input type="text" class="form-input" value="Crypto Wallet Interfacing" readonly /></div>
-            <div class="form-group"><label class="form-label">Amount to Fund ($)</label><input type="number" id="systemDepositInputAmount" class="form-input" placeholder="Enter amount to seed e.g. 5000" min="1"/></div>
-            <button onclick="commitDepositRedirectionRoute()" style="width:100%; padding:14px; background:#238636; border:none; color:#fff; border-radius:12px; font-weight:700; cursor:pointer; font-size:13px;">Proceed to Gateway Secure</button>
-        `;
-        document.getElementById('systemModalContainer').classList.add('active');
-    }
-
-    function commitDepositRedirectionRoute() {
-        const textValueField = document.getElementById('systemDepositInputAmount').value;
-        if (!textValueField || parseFloat(textValueField) <= 0) return alert('Please supply a valid numeric amount parameters.');
-        
-        localStorage.setItem('customDepositAmount', textValueField);
-        closeSystemModal();
-        window.location.href = './deposit.html';
-    }
-
-    function openWithdrawModal() {
-        document.getElementById('modalHeaderTitle').innerText = 'Withdraw Settlement';
-        document.getElementById('modalTargetInterface').innerHTML = `
-            <div class="form-group"><label class="form-label">Amount ($)</label><input type="number" id="systemWithdrawInputVal" class="form-input" placeholder="Specify allocation value" /></div>
-            <div class="form-group"><label class="form-label">Destination Node Address / Routing</label><input type="text" id="systemWithdrawInputNode" class="form-input" placeholder="e.g. BTC/Bank Routing parameter" /></div>
-            <button onclick="commitWithdrawalServerAction()" style="width:100%; padding:14px; background:#da3633; border:none; color:#fff; border-radius:12px; font-weight:700; cursor:pointer; font-size:13px;">Execute Secure Remittance</button>
-        `;
-        document.getElementById('systemModalContainer').classList.add('active');
-    }
-
-    async function commitWithdrawalServerAction() {
-        const totalNumericValue = parseFloat(document.getElementById('systemWithdrawInputVal').value);
-        const destinationTextAddress = document.getElementById('systemWithdrawInputNode').value;
-        
-        if (!totalNumericValue || totalNumericValue > localCalculatedAccountBalance || !destinationTextAddress) {
-            return alert('Transaction rejected: Invalid amount or parameter constraints occurred.');
-        }
-        
-        await dispatchTransactionNetworkRequest('withdraw', totalNumericValue, `Withdrawn to ${destinationTextAddress.substring(0,8)}...`);
-    }
-
-    async function dispatchTransactionNetworkRequest(transactionTypeString, processAmountNumeric, summaryDescriptionString) {
-        try {
-            const serverTransactionResponse = await fetch(`${API_BASE_URL}/transactions`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    userId: window.currentUserId, 
-                    type: transactionTypeString, 
-                    amount: processAmountNumeric, 
-                    desc: summaryDescriptionString 
-                })
-            });
-            
-            const operationalReturnPayload = await serverTransactionResponse.json();
-            if (!serverTransactionResponse.ok) throw new Error(operationalReturnPayload.error || "Execution failed context error.");
-            
-            localCalculatedAccountBalance = operationalReturnPayload.balance;
-            refreshDisplayedBalanceString();
-            fetchAssetTransactionLogs();
-            closeSystemModal();
-        } catch(transactionProcessingException) {
-            alert(transactionProcessingException.message || "Network transaction failure.");
-        }
-    }
-
-    async function fetchAssetTransactionLogs() {
-        const logContainerNodeElement = document.getElementById('transactionList');
-        try {
-            const databaseLogResponse = await fetch(`${API_BASE_URL}/transactions/${window.currentUserId}`);
-            const logsArrayCollection = await databaseLogResponse.json();
-            
-            logContainerNodeElement.innerHTML = '';
-            if(logsArrayCollection.length === 0) {
-                logContainerNodeElement.innerHTML = `<tr><td colspan="3" style="text-align:center; color:#8b949e; padding: 20px 0;">No logs currently linked to account.</td></tr>`;
+            if (stockPositions.length === 0) {
+                summaryBadge.innerText = "Total Allocated: $0.00";
                 return;
             }
-            
-            logsArrayCollection.forEach(historyObjectRow => {
-                const markupDataRowDomElement = document.createElement('tr');
-                const cleanDisplayAmount = parseFloat(historyObjectRow.amount).toLocaleString('en-US', {minimumFractionDigits: 2});
-                const dynamicPrefixSign = historyObjectRow.type === 'deposit' ? '+' : '-';
+
+            let computedAggregateTotal = 0;
+            let tableRowsHtml = "";
+
+            stockPositions.forEach(position => {
+                const initialPrincipal = parseFloat(position.amount);
                 
-                markupDataRowDomElement.innerHTML = `
-                    <td><span class="tx-badge-type ${historyObjectRow.type}">${historyObjectRow.type}</span></td>
-                    <td>
-                        <div class="tx-desc-cell">${historyObjectRow.desc || 'System Allocation Process'}</div>
-                        <div class="tx-desc-subtext">Verified Asset Node</div>
-                    </td>
-                    <td class="tx-amt-cell ${historyObjectRow.type}">${dynamicPrefixSign}$${cleanDisplayAmount}</td>
+                // Calculate elapsed time (days passed since investment creation)
+                const investmentDate = position.createdAt ? new Date(position.createdAt) : new Date();
+                const currentDate = new Date();
+                const timeDifference = currentDate.getTime() - investmentDate.getTime();
+                const daysElapsed = Math.max(0, Math.floor(timeDifference / (1000 * 60 * 60 * 24)));
+                
+                // Compounded daily interest equation: Principal * (1 + 0.01)^days
+                const currentValue = initialPrincipal * Math.pow(1 + 0.01, daysElapsed);
+                const totalProfitPercentage = ((currentValue - initialPrincipal) / initialPrincipal) * 100;
+                
+                computedAggregateTotal += currentValue;
+
+                tableRowsHtml += `
+                    <tr style="background: rgba(255,255,255,0.01);">
+                        <td style="padding: 14px 16px; font-weight: 700; color: #fff;">${position.desc.replace('Investment — ', '')}</td>
+                        <td style="padding: 14px 16px;">1.00 Unit Base</td>
+                        <td style="padding: 14px 16px;">$${initialPrincipal.toFixed(2)}</td>
+                        <td style="padding: 14px 16px; color: #58a6ff; font-weight: 600;">$${currentValue.toFixed(2)}</td>
+                        <td style="padding: 14px 16px; text-align: right; color: #2ea043; font-weight: 700;">
+                            +${totalProfitPercentage.toFixed(2)}% (+1% daily)
+                        </td>
+                    </tr>
                 `;
-                logContainerNodeElement.appendChild(markupDataRowDomElement);
             });
-        } catch(logProcessingException) {
-            console.error("Critical Failure Log Synchronizer:", logProcessingException);
+
+            dataTableContainer.innerHTML = tableRowsHtml;
+            summaryBadge.innerText = `Total Current Portfolio: $${computedAggregateTotal.toLocaleString('en-US', { 
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2 
+            })}`;
+
+        } catch (err) {
+            console.error("Error drawing stock position arrays:", err);
+            summaryBadge.innerText = "Total Allocated: Portfolio Offline";
         }
     }
 
-    function applyMembershipPlan(membershipTierNameString, computedPriceAmountValue) {
-        localStorage.setItem('membershipTier', membershipTierNameString);
-        localStorage.setItem('membershipPrice', computedPriceAmountValue);
+    async function openInvestmentBuyModal(stockName, stockPrice) {
+        const userConfirm = confirm(`Would you like to authorize an equity investment in ${stockName} for $${stockPrice}?`);
+        if (!userConfirm) return;
         
-        localStorage.setItem('customDepositAmount', computedPriceAmountValue);
-        window.location.href = './deposit.html';
+        try {
+            const res = await fetch(`${API_BASE_URL}/transactions`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    userId: window.currentUserId,
+                    type: 'investment',
+                    amount: stockPrice,
+                    desc: `Investment — ${stockName}`
+                })
+            });
+
+            if (!res.ok) throw new Error("Insufficient pool allocation balance.");
+
+            alert(`Successfully purchased equity holdings in ${stockName}!`);
+            loadUserActiveStockPositions(); 
+
+        } catch (buyErr) {
+            alert(`Purchase Blocked: ${buyErr.message}`);
+        }
     }
 
-    function closeSystemModal() {
-        document.getElementById('systemModalContainer').classList.remove('active');
-    }
-
-    function handleLogout() {
+    function executeSecureSignOut() {
         localStorage.clear();
-        window.location.href = './Sign_In.html';
-    }
-
-    // Charting Framework Engine Controls
-    function renderMarketTechnicalChart() {
-        const visualContextCanvasNode = document.getElementById('marketMetricChart').getContext('2d');
-        
-        if(liveRenderedChartInstance) { liveRenderedChartInstance.destroy(); }
-        
-        // Match line framework from modern asset charts
-        const layoutGradientTracker = visualContextCanvasNode.createLinearGradient(0, 0, 0, 140);
-        layoutGradientTracker.addColorStop(0, 'rgba(63, 185, 80, 0.25)');
-        layoutGradientTracker.addColorStop(1, 'rgba(63, 185, 80, 0.0)');
-
-        liveRenderedChartInstance = new Chart(visualContextCanvasNode, {
-            type: 'line',
-            data: {
-                labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-                datasets: [{
-                    label: 'TSLA Value Tracking',
-                    data: [426, 432, 435, 434, 436, 438, 434],
-                    borderColor: '#3fb950',
-                    borderWidth: 2,
-                    pointRadius: 0,
-                    tension: 0.4,
-                    fill: true,
-                    backgroundColor: layoutGradientTracker
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    x: { grid: { display: false }, ticks: { color: '#6e7681', font: { size: 9 } } },
-                    y: { position: 'right', grid: { color: 'rgba(48, 54, 61, 0.3)' }, ticks: { color: '#6e7681', font: { size: 9 } } }
-                }
-            }
-        });
+        window.location.replace('./Sign_In.html');
     }
 </script>
 </body>
