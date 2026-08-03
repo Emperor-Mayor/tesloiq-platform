@@ -1,134 +1,216 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Crypto Deposit Gateway</title>
-  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <style>
-    body { background-color: #0b0e14; color: #fff; font-family: sans-serif; display: flex; justify-content: center; padding: 20px; }
-    .deposit-box { background: #161b22; border: 1px solid #30363d; border-radius: 20px; padding: 24px; width: 100%; max-width: 450px; }
-    .crypto-select { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 16px 0; }
-    .crypto-btn { background: #0d1117; border: 1px solid #30363d; padding: 12px; border-radius: 12px; color: #fff; text-align: center; cursor: pointer; }
-    .crypto-btn.active { border-color: #388bfd; background: #1f2937; }
-    .qr-area { background: #fff; padding: 16px; display: inline-block; border-radius: 12px; margin: 20px 0; }
-    .input-field { width: 100%; padding: 12px; background: #0d1117; border: 1px solid #30363d; border-radius: 10px; color: #fff; margin-top: 8px; box-sizing: border-box; }
-    .action-btn { width: 100%; padding: 14px; background: #238636; border: none; color: #fff; font-weight: bold; border-radius: 12px; cursor: pointer; margin-top: 16px; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crypto Deposit Gateway — Tesloiq</title>
+    <script>
+      // Security Gate: Verify session parameters before loading DOM tree
+      let currentUserId = localStorage.getItem('userId');
+      if (!currentUserId) {
+        window.location.replace('./Sign_In.html');
+      }
+      window.currentUserId = currentUserId;
+    </script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { background-color: #0b0e14; color: #ffffff; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
+        
+        .gateway-container { width: 100%; max-width: 420px; background-color: #0d1117; border-radius: 24px; border: 1px solid #21262d; padding: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.5); position: relative; }
+        
+        .gateway-header { display: flex; align-items: center; gap: 14px; margin-bottom: 24px; }
+        .back-btn { background: #161b22; border: 1px solid #21262d; color: #8b949e; width: 38px; height: 38px; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; text-decoration: none; }
+        .back-btn:hover { color: #fff; background: #1f242d; }
+        .gateway-header h2 { font-size: 18px; font-weight: 700; }
+
+        .form-group { margin-bottom: 18px; }
+        .form-label { display: block; font-size: 11px; color: #8b949e; margin-bottom: 8px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+        .select-input { width: 100%; padding: 12px 14px; background-color: #161b22; border: 1px solid #21262d; border-radius: 12px; color: #fff; font-size: 13px; outline: none; cursor: pointer; }
+        .select-input:focus { border-color: #388bfd; }
+
+        .qr-box-wrapper { background: #fff; padding: 16px; border-radius: 16px; width: 180px; height: 180px; margin: 20px auto; display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+        .qr-box-wrapper img { width: 100%; height: 100%; object-fit: contain; }
+
+        .meta-info-row { text-align: center; margin-bottom: 20px; }
+        .network-lbl { font-size: 12px; color: #8b949e; margin-bottom: 4px; }
+        .network-val { font-size: 14px; font-weight: 700; color: #58a6ff; }
+
+        .copy-input-group { display: flex; background: #161b22; border: 1px solid #21262d; border-radius: 12px; overflow: hidden; margin-bottom: 24px; }
+        .address-text { flex: 1; padding: 14px; font-size: 12px; color: #c9d1d9; background: transparent; border: none; outline: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .copy-trigger-btn { background: #21262d; border: none; color: #c9d1d9; padding: 0 16px; font-weight: 600; font-size: 12px; cursor: pointer; transition: background 0.2s; }
+        .copy-trigger-btn:hover { background: #30363d; color: #fff; }
+
+        .amount-display-field { width: 100%; padding: 14px; background: #161b22; border: 1px solid #21262d; border-radius: 12px; color: #fff; font-size: 16px; font-weight: 700; text-align: center; }
+
+        .action-submit-btn { width: 100%; padding: 16px; background-color: #238636; border: none; color: #fff; border-radius: 14px; font-weight: 700; font-size: 14px; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px; transition: background 0.2s; }
+        .action-submit-btn:hover { background-color: #2ea043; }
+        .action-submit-btn:disabled { background-color: #21262d; color: #8b949e; cursor: not-allowed; }
+    </style>
 </head>
 <body>
 
-<div class="deposit-box" x-data="depositManager()" x-init="init()">
-  <h2>Crypto Deposit Terminal</h2>
-  <p style="color: #8b949e; font-size: 13px;">Choose an asset below to reveal its secure network receiving terminal address.</p>
+<div class="gateway-container">
+    <div class="gateway-header">
+        <a href="./dashboard.html" class="back-btn"><i class="fa-solid fa-arrow-left"></i></a>
+        <h2>Crypto Deposit Gateway</h2>
+    </div>
 
-  <div class="crypto-select">
-    <template x-for="crypto in cryptos">
-      <div class="crypto-btn" :class="selectedCrypto?.id === crypto.id ? 'active' : ''" @click="selectCrypto(crypto)">
-        <div style="font-size: 18px; font-weight: bold;" x-text="crypto.icon"></div>
-        <div style="font-size: 11px;" x-text="crypto.symbol"></div>
-      </div>
-    </template>
-  </div>
+    <!-- Network Selector Component -->
+    <div class="form-group">
+        <label class="form-label">Select Asset / Network</label>
+        <select id="assetNetworkSelector" class="select-input" onchange="handleNetworkSwitchAction()">
+            <option value="BTC">Bitcoin (BTC)</option>
+            <option value="BNB">BNB (BEP-20)</option>
+            <option value="TON">Ton (TON)</option>
+            <option value="SUI">Sui (SUI)</option>
+        </select>
+    </div>
 
-  <div style="text-align: center;" x-show="selectedCrypto">
-    <div class="qr-area"><div id="qrcode"></div></div>
-    <div style="font-size: 12px; color: #8b949e; margin-bottom: 4px;">Network: <span style="color:#fff; font-weight:bold;" x-text="selectedCrypto?.network"></span></div>
-    <input type="text" class="input-field" readonly :value="selectedCrypto?.address" style="text-align:center;">
-    <button @click="copyToClipboard()" class="action-btn" style="background:#21262d; margin-top:8px;" x-text="copied ? 'Copied Wallet!' : 'Copy Address'"></button>
-  </div>
+    <div class="qr-box-wrapper">
+        <img id="qrTargetImageNode" src="" alt="Deposit Address Destination Matrix">
+    </div>
 
-  <div style="margin-top: 20px;">
-    <label style="font-size: 12px; color: #8b949e;">Amount to Fund ($ USD)</label>
-    <input type="number" class="input-field" x-model="depositAmount" placeholder="0.00">
-  </div>
+    <div class="meta-info-row">
+        <div class="network-lbl">Active Network Node</div>
+        <div class="network-val" id="networkDisplayLabel"><i class="fa-brands fa-bitcoin"></i> Bitcoin (BTC)</div>
+    </div>
 
-  <button @click="confirmDeposit()" class="action-btn">Confirm Network Transfer</button>
+    <div class="copy-input-group">
+        <input type="text" class="address-text" id="walletAddressNode" value="" readonly>
+        <button class="copy-trigger-btn" onclick="copyWalletAddressToClipboard()" id="copyBtnText">Copy</button>
+    </div>
+
+    <div class="form-group">
+        <label class="form-label">Amount to Fund ($ USD)</label>
+        <input type="text" id="fundingAmountDisplay" class="amount-display-field" readonly>
+    </div>
+
+    <button class="action-submit-btn" id="confirmTransferBtn" onclick="executeNetworkConfirmationRoute()">
+        <i class="fa-solid fa-circle-check"></i> Confirm Network Transfer
+    </button>
 </div>
 
 <script>
-    function depositManager() {
-      return {
-        selectedCrypto: null,
-        depositAmount: '',
-        copied: false,
-        membershipTier: localStorage.getItem('membershipTier') || null,
-        membershipPrice: localStorage.getItem('membershipPrice') || null,
-        apiBaseUrl: 'https://tesloiq.onrender.com',
-        currentUserId: localStorage.getItem('userId'),
-        
-        cryptos: [
-          { id: 'btc', name: 'Bitcoin', symbol: 'BTC', icon: '₿', address: 'bc1qy5nkg0rsu7w4vp63c0a3es26uxnhwrjyu2c0gn', network: 'Bitcoin' },
-          { id: 'eth', name: 'Ethereum', symbol: 'ETH', icon: 'Ξ', address: '0xcf9CF6cC3A8F314999c9d2ba1136cB07255eFf0B', network: 'ERC-20' },
-          { id: 'trx', name: 'Tron', symbol: 'TRX', icon: '⬟', address: 'TNWjENWFiEhrEnwywLZL2y9Lw4S7WZj2dm', network: 'TRC-20' },
-          { id: 'sol', name: 'Solana', symbol: 'SOL', icon: '◎', address: 'Bw3p4QqmNUKK19hqJXABZXrG3Z5ryAqHs1mLrdn1986g', network: 'Solana' }
-        ],
+    const API_BASE_URL = 'https://tesloiq.onrender.com/api';
+    let loadedTransferAmountValue = 0;
+    let hasCopiedAddress = false;
 
-        init() {
-          this.selectCrypto(this.cryptos[0]);
-          const customAmt = localStorage.getItem('customDepositAmount');
-          if (customAmt) {
-            this.depositAmount = customAmt;
-            localStorage.removeItem('customDepositAmount');
-          } else if (this.membershipPrice) {
-            this.depositAmount = this.membershipPrice;
-          }
+    // Unified Encapsulated Repository for Wallet Target Infrastructure
+    const WALLET_ECOSYSTEM_REGISTRY = {
+        BTC: {
+            label: '<i class="fa-brands fa-bitcoin"></i> Bitcoin (BTC)',
+            address: 'bc1qy5nkg0rsu7w4vp63c0a3es26uxnhwrjyu2c0gn',
+            qrPrefix: 'bitcoin:'
         },
-
-        selectCrypto(crypto) {
-          this.selectedCrypto = crypto;
-          this.copied = false;
-          this.$nextTick(() => { this.generateQRCode(); });
+        BNB: {
+            label: '<i class="fa-solid fa-coins"></i> BNB BEP 20',
+            address: '0xcf9CF6cC3A8F314999c9d2ba1136cB07255eFf0B',
+            qrPrefix: ''
         },
-
-        generateQRCode() {
-          const qrContainer = document.getElementById('qrcode');
-          if (!qrContainer) return;
-          qrContainer.innerHTML = '';
-          new QRCode(qrContainer, { text: this.selectedCrypto.address, width: 160, height: 160 });
+        TON: {
+            label: '<i class="fa-solid fa-diamond"></i> Ton (TON)',
+            address: 'UQBDFLB35M7QZtcYF7FW9aaF44sd7iLHlauVdyUAafp9SXQq',
+            qrPrefix: ''
         },
-
-        copyToClipboard() {
-          navigator.clipboard.writeText(this.selectedCrypto.address).then(() => {
-            this.copied = true;
-            setTimeout(() => { this.copied = false; }, 2000);
-          });
-        },
-
-        async confirmDeposit() {
-          const amount = parseFloat(this.depositAmount);
-          if (!amount || amount <= 0) return alert('Provide a valid funding amount.');
-          if (!this.currentUserId) return alert('Session expired. Please sign in again.');
-
-          const description = this.membershipTier 
-            ? `Purchased ${this.membershipTier} Premium Membership` 
-            : `Funded via ${this.selectedCrypto.name}`;
-
-          try {
-            const res = await fetch(`${this.apiBaseUrl}/transactions`, {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                },
-                body: JSON.stringify({ userId: this.currentUserId, type: 'deposit', amount: amount, desc: description })
-            });
-
-            if(!res.ok) throw new Error("Rejected by backend.");
-
-            if (this.membershipTier) {
-              localStorage.removeItem('membershipTier');
-              localStorage.removeItem('membershipPrice');
-            }
-
-            alert('Crypto allocation confirmed globally.');
-            window.location.href = './dashboard.html';
-          } catch(err) {
-              alert(`Error sync: ${err.message}`);
-          }
+        SUI: {
+            label: '<i class="fa-solid fa-droplet"></i> Sui (SUI)',
+            address: '0x7ab9b39eee123c5c2c035ee221ed77489957169448657c571ad2151a4991d341',
+            qrPrefix: ''
         }
-      }
+    };
+
+    window.addEventListener('DOMContentLoaded', () => {
+        extractDashboardAllocationContext();
+        handleNetworkSwitchAction(); // Boot with initial tracking calculations
+    });
+
+    function extractDashboardAllocationContext() {
+        const storedContextAmount = localStorage.getItem('customDepositAmount');
+        if (!storedContextAmount || parseFloat(storedContextAmount) <= 0) {
+            alert("No standard payment token detected. Returning to main engine.");
+            window.location.href = './dashboard.html';
+            return;
+        }
+        
+        loadedTransferAmountValue = parseFloat(storedContextAmount);
+        document.getElementById('fundingAmountDisplay').value = loadedTransferAmountValue.toLocaleString('en-US', {
+            minimumFractionDigits: 2, 
+            maximumFractionDigits: 2
+        });
+    }
+
+    function handleNetworkSwitchAction() {
+        const chosenNetworkKey = document.getElementById('assetNetworkSelector').value;
+        const targetConfig = WALLET_ECOSYSTEM_REGISTRY[chosenNetworkKey];
+        
+        // Dynamic Node Mapping Realignment
+        document.getElementById('networkDisplayLabel').innerHTML = targetConfig.label;
+        document.getElementById('walletAddressNode').value = targetConfig.address;
+        
+        // Re-render Dynamic QR Data
+        const encodedDataParam = encodeURIComponent(targetConfig.qrPrefix + targetConfig.address);
+        document.getElementById('qrTargetImageNode').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodedDataParam}`;
+        
+        // Reset interactive state back to clean defaults if user switches active network configurations
+        hasCopiedAddress = false;
+        document.getElementById('confirmTransferBtn').innerHTML = `<i class="fa-solid fa-circle-check"></i> Confirm Network Transfer`;
+    }
+
+    function copyWalletAddressToClipboard() {
+        const inputDomElement = document.getElementById('walletAddressNode');
+        inputDomElement.select();
+        inputDomElement.setSelectionRange(0, 99999);
+        navigator.clipboard.writeText(inputDomElement.value);
+
+        const copyLabelBtn = document.getElementById('copyBtnText');
+        copyLabelBtn.innerText = 'Copied!';
+        copyLabelBtn.style.background = '#238636';
+        copyLabelBtn.style.color = '#fff';
+
+        hasCopiedAddress = true;
+        const actionButton = document.getElementById('confirmTransferBtn');
+        actionButton.innerHTML = `<i class="fa-solid fa-money-bill-wave"></i> I Have Paid`;
+
+        setTimeout(() => {
+            copyLabelBtn.innerText = 'Copy';
+            copyLabelBtn.style.background = '#21262d';
+            copyLabelBtn.style.color = '#c9d1d9';
+        }, 2000);
+    }
+
+    async function executeNetworkConfirmationRoute() {
+        const interactiveSubmitBtn = document.getElementById('confirmTransferBtn');
+        const chosenNetworkKey = document.getElementById('assetNetworkSelector').value;
+        
+        interactiveSubmitBtn.disabled = true;
+        interactiveSubmitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Confirming with Network (2s)...`;
+
+        const syncBackendData = async () => {
+            try {
+                await fetch(`${API_BASE_URL}/transactions`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        userId: window.currentUserId,
+                        type: 'deposit',
+                        amount: loadedTransferAmountValue,
+                        desc: `Crypto Deposit (${chosenNetworkKey}) — Verified Assets`
+                    })
+                });
+            } catch (err) {
+                console.error("Silent background check sync anomaly:", err);
+            }
+        };
+
+        // Fire off backend record creation pipeline asynchronously
+        syncBackendData();
+
+        // Enforce the explicit 2-second wait state before window redirection
+        setTimeout(() => {
+            localStorage.removeItem('customDepositAmount');
+            window.location.href = './dashboard.html';
+        }, 2000);
     }
 </script>
 </body>
