@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Crypto Deposit Gateway — Tesloiq</title>
+    <script src="./api.js"></script>
     <script>
       // Security Gate: Verify session parameters before loading DOM tree
       let currentUserId = localStorage.getItem('userId');
@@ -116,7 +117,6 @@
 </div>
 
 <script>
-    const API_BASE_URL = 'https://tesloiq.onrender.com/api';
     let loadedTransferAmountValue = 0;
 
     // Comprehensive Cryptographic Target Infrastructure Registry
@@ -213,31 +213,20 @@
         
         interactiveSubmitBtn.disabled = true;
 
-        // Display Success Modal Layout seamlessly 
         const modalOverlay = document.getElementById('successModalOverlay');
         modalOverlay.classList.add('active');
 
-        const syncBackendData = async () => {
-            try {
-                await fetch(`${API_BASE_URL}/transactions`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        userId: window.currentUserId,
-                        type: 'deposit',
-                        amount: loadedTransferAmountValue,
-                        desc: `Crypto Deposit (${chosenNetworkKey}) — Verified Assets`
-                    })
-                });
-            } catch (err) {
-                console.error("Background data logging error exception:", err);
-            }
-        };
+        try {
+            await postTransaction(
+                window.currentUserId,
+                'deposit',
+                loadedTransferAmountValue,
+                `Crypto Deposit (${chosenNetworkKey}) — Verified Assets`
+            );
+        } catch (err) {
+            console.error("Background data logging error exception:", err);
+        }
 
-        // Fire asynchronous background database update execution routing
-        syncBackendData();
-
-        // Hold success popup visibility open for exactly 2000ms before returning tracking contexts to dashboard
         setTimeout(() => {
             localStorage.removeItem('customDepositAmount');
             window.location.href = './dashboard.html';
