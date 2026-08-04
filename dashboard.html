@@ -179,7 +179,7 @@
         /* Modals Structure Layout */
         .modal-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 200; display: flex; justify-content: center; align-items: flex-end; opacity: 0; visibility: hidden; transition: all 0.3s; }
         .modal-overlay.active { opacity: 1; visibility: visible; }
-        .modal-body { width: 100%; background-color: #12161f; border-top-left-radius: 24px; border-top-right-radius: 24px; padding: 24px; border: 1px solid #21262d; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .modal-body { width: 100%; background-color: #12161f; border-top-left-radius: 24px; border-top-right-radius: 24px; padding: 24px; border: 1px solid #21262d; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); max-height: 90%; overflow-y: auto; }
         .modal-overlay.active .modal-body { transform: translateY(0); }
         .modal-title { font-size: 16px; font-weight: 700; margin-bottom: 18px; display: flex; justify-content: space-between; align-items: center; }
         .modal-close { background: none; border: none; color: #8b949e; font-size: 18px; cursor: pointer; }
@@ -188,6 +188,29 @@
         .form-label { display: block; font-size: 11px; color: #8b949e; margin-bottom: 6px; font-weight: 600; }
         .form-input { width: 100%; padding: 12px 14px; background-color: #0d1117; border: 1px solid #21262d; border-radius: 12px; color: #fff; font-size: 13px; }
         .form-input:focus { outline: none; border-color: #388bfd; }
+
+        /* Wallet Box Display & Countdown Styling */
+        .wallet-display-box { background: #0d1117; border: 1px solid #21262d; border-radius: 12px; padding: 14px; margin-top: 8px; word-break: break-all; }
+        .wallet-address-text { font-family: monospace; font-size: 11px; color: #58a6ff; margin-bottom: 10px; display: block; }
+        .copy-btn { background: #1f2633; border: 1px solid #30363d; color: #c9d1d9; border-radius: 6px; padding: 6px 12px; font-size: 11px; cursor: pointer; font-weight: 600; transition: background 0.2s; }
+        .copy-btn:hover { background: #30363d; color: #fff; }
+
+        .payment-timer-wrapper { display: flex; align-items: center; justify-content: space-between; background: rgba(56, 139, 253, 0.08); border: 1px solid rgba(56, 139, 253, 0.2); border-radius: 10px; padding: 10px 12px; margin-top: 12px; }
+        .timer-title-lbl { font-size: 11px; color: #8b949e; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+        .timer-countdown-clock { font-size: 14px; font-weight: 800; color: #e3b341; font-family: monospace; }
+        
+        .btn-paid-trigger { width: 100%; background: #2ea043; border: none; color: #fff; font-weight: 700; font-size: 13px; padding: 12px; border-radius: 10px; margin-top: 10px; cursor: pointer; transition: background 0.2s; display: flex; justify-content: center; align-items: center; gap: 8px; }
+        .btn-paid-trigger:hover { background: #3fb950; }
+        .btn-paid-trigger:disabled { background: #21262d; color: #6e7681; cursor: not-allowed; }
+
+        /* Success Popup Component Framework */
+        .success-modal-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 300; display: flex; justify-content: center; align-items: center; padding: 20px; opacity: 0; visibility: hidden; transition: all 0.3s; }
+        .success-modal-overlay.active { opacity: 1; visibility: visible; }
+        .success-card-body { background: #12161f; border: 1px solid #21262d; border-radius: 24px; padding: 32px 24px; text-align: center; max-width: 320px; width: 100%; transform: scale(0.8); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .success-modal-overlay.active .success-card-body { transform: scale(1); }
+        .success-icon-badge { width: 64px; height: 64px; background: rgba(46, 160, 67, 0.15); color: #3fb950; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 28px; margin: 0 auto 18px auto; border: 1px solid rgba(46, 160, 67, 0.3); }
+        .success-card-title { font-size: 18px; font-weight: 800; color: #fff; margin-bottom: 8px; }
+        .success-card-desc { font-size: 12px; color: #8b949e; line-height: 1.5; margin-bottom: 20px; }
 
         /* Global Sticky Navigation Controls */
         .bottom-nav { position: absolute; bottom: 0; left: 0; right: 0; height: 68px; background-color: #12161f; border-top: 1px solid #21262d; display: flex; justify-content: space-around; align-items: center; padding-bottom: 12px; z-index: 80; }
@@ -359,22 +382,20 @@
                     <div class="active-holdings-panel">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
                             <span style="font-size: 13px; font-weight: 700; color: #fff;"><i class="fa-solid fa-briefcase" style="color: #2ea043; margin-right: 6px;"></i> Active Stock Positions</span>
-                            <span style="font-size: 10px; color: #8b949e; font-weight: 600;">+1% Compounding Daily</span>
+                            <span style="font-size: 10px; color: #8b949e; font-weight: 600;">+1% Compound</span>
                         </div>
                         <div class="table-responsive-wrapper">
                             <table class="portfolio-table">
                                 <thead>
                                     <tr>
-                                        <th>ASSET</th>
-                                        <th>PRINCIPAL</th>
-                                        <th>CURRENT VALUE</th>
-                                        <th style="text-align: right;">PnL GROW</th>
+                                        <th>Asset</th>
+                                        <th>Shares</th>
+                                        <th>Value</th>
+                                        <th>Returns</th>
                                     </tr>
                                 </thead>
                                 <tbody id="activeStockHoldingsBody">
-                                    <tr>
-                                        <td colspan="4" style="text-align: center; color: #8b949e; font-style: italic; padding: 16px 0;">No active equity configurations found.</td>
-                                    </tr>
+                                    <!-- Dynamic Holdings Data -->
                                 </tbody>
                             </table>
                         </div>
@@ -382,14 +403,12 @@
                 </div>
 
                 <div>
-                    <!-- Market Card Window Componentry -->
+                    <!-- Chart Section -->
                     <div class="market-card-frame">
                         <div class="market-meta-header">
                             <div class="market-title-group">
-                                <span style="font-size: 13px; font-weight: 700; color: #fff;">Live Market</span>
-                                <span style="font-size: 9px; font-weight: 700; color: #3fb950; background: rgba(46,160,67,0.12); padding: 2px 6px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px;">
-                                    <span class="live-pulse"></span> LIVE
-                                </span>
+                                <span class="live-pulse"></span>
+                                <span style="font-size: 13px; font-weight: 700;">Live Market View</span>
                             </div>
                             <div class="market-selector-pill">
                                 <button class="selector-btn active">Stocks</button>
@@ -398,628 +417,815 @@
                         </div>
 
                         <div class="asset-ticker-summary">
-                            <div class="ticker-title" style="font-size: 14px; color: #8b949e;">TSLA — Tesla Inc.</div>
+                            <div>
+                                <div class="ticker-title" id="marketTickerTitle">S&P 500 Index</div>
+                                <div style="font-size: 10px; color: #6e7681;">Market Performance</div>
+                            </div>
                             <div class="ticker-pricing">
-                                <span class="ticker-amt">$444.81</span>
-                                <span class="ticker-change">+3.58%</span>
+                                <div class="ticker-amt" id="marketTickerAmt">$5,420.10</div>
+                                <div class="ticker-change">+1.24%</div>
                             </div>
                         </div>
 
-                        <!-- Technical Visualization Frame -->
-                        <div style="width: 100%; height: 140px; position: relative;">
+                        <div style="height: 180px; width: 100%; position: relative;">
                             <canvas id="marketMetricChart"></canvas>
                         </div>
 
                         <div class="chart-timeframe-row">
                             <button class="tf-btn">1D</button>
-                            <button class="tf-btn active">1W</button>
-                            <button class="tf-btn">1M</button>
+                            <button class="tf-btn">1W</button>
+                            <button class="tf-btn active">1M</button>
                             <button class="tf-btn">3M</button>
                             <button class="tf-btn">1Y</button>
                             <button class="tf-btn">ALL</button>
                         </div>
                     </div>
 
-                    <!-- Membership Tier Upgrade Callout -->
-                    <div class="membership-banner-offer" onclick="switchView('membershipView')">
-                        <div style="max-width: 80%;">
-                            <h4>Get Your Membership Card</h4>
-                            <p>Apply for Silver, Gold or Platinum to unlock Tesla car shopping privileges.</p>
+                    <!-- History Section -->
+                    <div>
+                        <div class="history-section-header">
+                            <h3>Transaction History</h3>
+                            <a class="history-view-all-link">View All</a>
                         </div>
-                        <div class="icon-btn" style="background:#fff; color:#0d1117; border:none;"><i class="fa-solid fa-arrow-right"></i></div>
+                        <table class="transaction-table">
+                            <tbody id="transactionTableBody">
+                                <!-- Dynamic Transactions Data -->
+                            </tbody>
+                        </table>
                     </div>
-
-                    <!-- Operational History Logs Tracker Framework -->
-                    <div class="history-section-header">
-                        <h3>Recent Transactions</h3>
-                        <a class="history-view-all-link">View All</a>
-                    </div>
-                    <table class="transaction-table">
-                        <thead>
-                            <tr>
-                                <th>TYPE</th>
-                                <th>DESCRIPTION</th>
-                                <th style="text-align: right;">AMOUNT</th>
-                            </tr>
-                        </thead>
-                        <tbody id="transactionList">
-                            <tr>
-                                <td colspan="3" style="text-align:center; color:#8b949e; padding: 20px 0;">Synchronizing network parameters...</td>
-                            </tr>
-                        </tbody>
-                    </table>
                 </div>
             </div>
         </div>
 
-        <!-- VIEW 2: INVEST IN EQUITY STOCKS MODULE -->
+        <!-- VIEW 2: INVEST STOCKS VIEW -->
         <div class="view" id="investStockView">
             <div class="header">
                 <div class="header-left">
-                    <button class="menu-btn" onclick="switchView('dashboardView')"><i class="fa-solid fa-arrow-left"></i></button>
+                    <button class="menu-btn mobile-only" onclick="toggleDrawer()"><i class="fa-solid fa-bars"></i></button>
                     <div class="title-area">
                         <h1>Invest in Stocks</h1>
-                        <p>Allocate capital into premium tech assets ecosystem</p>
+                        <p>Purchase equity positions</p>
                     </div>
                 </div>
             </div>
 
-            <div class="invest-grid" style="margin-top: 10px;">
-                <!-- SpaceX Card -->
+            <div class="invest-grid">
                 <div class="invest-card">
                     <div>
-                        <span class="invest-ticker-tag">$XSPC</span>
-                        <h4>SpaceX</h4>
-                        <p>Space Exploration Tech</p>
+                        <span class="invest-ticker-tag">TSLA</span>
+                        <h4>Tesla Inc.</h4>
+                        <p>Automotive & Energy</p>
                     </div>
                     <div>
-                        <div class="invest-card-price">$420.50</div>
-                        <button class="invest-card-btn" onclick="executeStockPurchase('SpaceX', 420.50)">Invest</button>
+                        <div class="invest-card-price">$242.80</div>
+                        <button class="invest-card-btn" onclick="handleBuyStock('TSLA', 'Tesla Inc.', 242.80)">Buy Stock</button>
                     </div>
                 </div>
 
-                <!-- OpenAI Card -->
                 <div class="invest-card">
                     <div>
-                        <span class="invest-ticker-tag">$AIOX</span>
-                        <h4>OpenAI</h4>
-                        <p>Artificial Intelligence Research</p>
+                        <span class="invest-ticker-tag">NVDA</span>
+                        <h4>NVIDIA Corp.</h4>
+                        <p>Semiconductors & AI</p>
                     </div>
                     <div>
-                        <div class="invest-card-price">$295.15</div>
-                        <button class="invest-card-btn" onclick="executeStockPurchase('OpenAI', 295.15)">Invest</button>
+                        <div class="invest-card-price">$128.40</div>
+                        <button class="invest-card-btn" onclick="handleBuyStock('NVDA', 'NVIDIA Corp.', 128.40)">Buy Stock</button>
                     </div>
                 </div>
 
-                <!-- NeuralLink Card -->
                 <div class="invest-card">
                     <div>
-                        <span class="invest-ticker-tag">$NLNK</span>
-                        <h4>NeuralLink</h4>
-                        <p>Brain-Machine Interfaces</p>
+                        <span class="invest-ticker-tag">AAPL</span>
+                        <h4>Apple Inc.</h4>
+                        <p>Consumer Electronics</p>
                     </div>
                     <div>
-                        <div class="invest-card-price">$188.00</div>
-                        <button class="invest-card-btn" onclick="executeStockPurchase('NeuralLink', 188.00)">Invest</button>
+                        <div class="invest-card-price">$224.20</div>
+                        <button class="invest-card-btn" onclick="handleBuyStock('AAPL', 'Apple Inc.', 224.20)">Buy Stock</button>
+                    </div>
+                </div>
+
+                <div class="invest-card">
+                    <div>
+                        <span class="invest-ticker-tag">AMZN</span>
+                        <h4>Amazon.com</h4>
+                        <p>E-commerce & Cloud</p>
+                    </div>
+                    <div>
+                        <div class="invest-card-price">$186.50</div>
+                        <button class="invest-card-btn" onclick="handleBuyStock('AMZN', 'Amazon.com', 186.50)">Buy Stock</button>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- VIEW 3: TIERS & MEMBERSHIP PLANS MANAGEMENTS -->
+        <!-- VIEW 3: MEMBERSHIP VIEW -->
         <div class="view" id="membershipView">
             <div class="header">
                 <div class="header-left">
-                    <button class="menu-btn" onclick="switchView('dashboardView')"><i class="fa-solid fa-arrow-left"></i></button>
+                    <button class="menu-btn mobile-only" onclick="toggleDrawer()"><i class="fa-solid fa-bars"></i></button>
                     <div class="title-area">
-                        <h1>Membership Cards</h1>
-                        <p>Select a membership tier to unlock privileges</p>
+                        <h1>Membership Tiers</h1>
+                        <p>Unlock premium features</p>
                     </div>
                 </div>
             </div>
 
-            <div style="margin-top: 10px;">
-                <!-- Card Option A: Gold Model Tier Layout -->
-                <div class="membership-tier-card" style="border-color: rgba(210,153,34,0.3);">
-                    <div class="tier-header-meta">
-                        <div>
-                            <span style="font-size: 10px; color: #d29922; font-weight: 800; letter-spacing: 1.5px;">GOLD TIER</span>
-                            <div class="tier-name-title" style="margin-top: 4px; color: #d29922;">Gold Member Card</div>
-                        </div>
-                        <i class="fa-solid fa-crown" style="color: #d29922; font-size: 20px;"></i>
-                    </div>
-                    <div class="tier-premium-price">$7,500</div>
-                    <div style="font-size: 11px; font-weight: 700; color: #8b949e; letter-spacing: 0.5px; border-top: 1px solid #21262d; padding-top: 12px;">BENEFITS</div>
-                    <ul class="tier-perks-list">
-                        <li class="tier-perk-item"><i class="fa-solid fa-check"></i> Access to all Tesla models</li>
-                        <li class="tier-perk-item"><i class="fa-solid fa-check"></i> 10% bulk purchase discount tiering</li>
-                        <li class="tier-perk-item"><i class="fa-solid fa-check"></i> VIP priority allocation order metrics</li>
-                        <li class="tier-perk-item"><i class="fa-solid fa-check"></i> Exclusive member event invitations</li>
-                        <li class="tier-perk-item"><i class="fa-solid fa-check"></i> Dedicated personal account manager access</li>
-                        <li class="tier-perk-item"><i class="fa-solid fa-check"></i> Early access windows to limited editions</li>
-                    </ul>
-                    <button class="tier-action-trigger" style="background: #d29922; color: #000;" onclick="applyMembershipPlan('Gold', 7500)">
-                        <i class="fa-solid fa-wallet"></i> Apply — $7,500
-                    </button>
+            <div class="membership-tier-card">
+                <div class="tier-header-meta">
+                    <span class="tier-name-title" style="color:#d29922;"><i class="fa-solid fa-crown"></i> VIP Gold Trader</span>
+                    <span style="font-size: 10px; background: rgba(210,153,34,0.2); color: #d29922; padding: 2px 8px; border-radius: 12px; font-weight: 700;">POPULAR</span>
                 </div>
-
-                <!-- Card Option B: Platinum Model Tier Layout -->
-                <div class="membership-tier-card" style="border-color: rgba(139,148,158,0.3);">
-                    <div class="tier-header-meta">
-                        <div>
-                            <span style="font-size: 10px; color: #8b949e; font-weight: 800; letter-spacing: 1.5px;">PLATINUM TIER</span>
-                            <div class="tier-name-title" style="margin-top: 4px; color: #8b949e;">Platinum Member Card</div>
-                        </div>
-                        <i class="fa-solid fa-gem" style="color: #8b949e; font-size: 20px;"></i>
-                    </div>
-                    <div class="tier-premium-price">$15,000</div>
-                    <div style="font-size: 11px; font-weight: 700; color: #8b949e; letter-spacing: 0.5px; border-top: 1px solid #21262d; padding-top: 12px;">BENEFITS</div>
-                    <ul class="tier-perks-list">
-                        <li class="tier-perk-item"><i class="fa-solid fa-check"></i> Ultimate priority allocation delivery metrics</li>
-                        <li class="tier-perk-item"><i class="fa-solid fa-check"></i> 20% dedicated fleet purchase reductions</li>
-                        <li class="tier-perk-item"><i class="fa-solid fa-check"></i> Track day racing training certification options</li>
-                        <li class="tier-perk-item"><i class="fa-solid fa-check"></i> Customized assembly color line personalization</li>
-                    </ul>
-                    <button class="tier-action-trigger" style="background: #8b949e; color: #000;" onclick="applyMembershipPlan('Platinum', 15000)">
-                        <i class="fa-solid fa-wallet"></i> Apply — $15,000
-                    </button>
-                </div>
+                <div class="tier-premium-price">$49.99 <span style="font-size: 12px; color: #8b949e; font-weight: 400;">/ month</span></div>
+                <ul class="tier-perks-list">
+                    <li class="tier-perk-item"><i class="fa-solid fa-check"></i> Zero commission trading fees on all equities</li>
+                    <li class="tier-perk-item"><i class="fa-solid fa-check"></i> Real-time AI investment analytics & insights</li>
+                    <li class="tier-perk-item"><i class="fa-solid fa-check"></i> Priority 24/7 dedicated customer support</li>
+                </ul>
+                <button class="tier-action-trigger" style="background:#d29922; color:#000;">Upgrade to VIP</button>
             </div>
         </div>
-    </div>
-
-    <!-- GLOBAL MOBILE STICKY BOTTOM NAVIGATION BAR -->
-    <div class="bottom-nav mobile-only">
-        <a class="nav-item active" id="b-nav-dash" onclick="switchView('dashboardView')"><i class="fa-solid fa-house"></i>Home</a>
-        <a class="nav-item" id="b-nav-invest" onclick="switchView('investStockView')"><i class="fa-solid fa-chart-line"></i>Invest</a>
-        <a class="nav-item" id="b-nav-member" onclick="switchView('membershipView')"><i class="fa-solid fa-crown"></i>Premium</a>
-        <div class="user-avatar" id="mobileUserAvatar">U</div>
-    </div>
-</div>
-
-<!-- DEPOSIT LEDGER TRIGGER MODAL FRAME -->
-<div class="modal-overlay" id="depositModal" onclick="closeModalOnOuterClick(event, 'depositModal')">
-    <div class="modal-body">
-        <div class="modal-title">Deposit Fund Allocation <button class="modal-close" onclick="closeDepositModal()">&times;</button></div>
-        <div class="form-group">
-            <label class="form-label">Payment Gateway Ecosystem</label>
-            <input type="text" class="form-input" value="USDT (TRC20) Network Ledger Address" disabled>
-        </div>
-        <div class="form-group">
-            <label class="form-label">Network Deposit Node Target Address</label>
-            <div style="display:flex; gap:8px;">
-                <input type="text" class="form-input" value="TY9g6KdxWpMhRxB5t7nVEQx483LmPskZ4w" id="depositWalletAddress" readonly style="color:#8b949e;">
-                <button onclick="copyDepositWallet()" style="background:#21262d; border:1px solid #30363d; color:#fff; padding:0 12px; border-radius:10px; cursor:pointer;"><i class="fa-regular fa-copy"></i></button>
-            </div>
-        </div>
-        <div class="form-group">
-            <label class="form-label">Target Capital Quantum Amount ($)</label>
-            <input type="number" class="form-input" placeholder="0.00" id="depositAmountInput">
-        </div>
-        <button class="tier-action-trigger" style="background:#238636; color:#fff; width:100%; margin-top:8px;" onclick="submitDepositOrder()">
-            <i class="fa-solid fa-check"></i> Submit Transaction Manifest
-        </button>
-    </div>
-</div>
-
-<!-- WITHDRAW LEDGER TRIGGER MODAL FRAME -->
-<div class="modal-overlay" id="withdrawModal" onclick="closeModalOnOuterClick(event, 'withdrawModal')">
-    <div class="modal-body">
-        <div class="modal-title">Withdraw Reserves Allocation <button class="modal-close" onclick="closeWithdrawModal()">&times;</button></div>
-        <div class="form-group">
-            <label class="form-label">Payout Target Network Protocol</label>
-            <input type="text" class="form-input" placeholder="e.g. USDT TRC20 Wallet Address" id="withdrawWalletInput">
-        </div>
-        <div class="form-group">
-            <label class="form-label">Reserves Capital Quantum Amount ($)</label>
-            <input type="number" class="form-input" placeholder="0.00" id="withdrawAmountInput">
-        </div>
-        <button class="tier-action-trigger" style="background:#f85149; color:#fff; width:100%; margin-top:8px;" onclick="submitWithdrawalOrder()">
-            <i class="fa-solid fa-paper-plane"></i> Initialize Secure Withdrawal
-        </button>
     </div>
 </div>
 
 <script>
-    const API_BASE_URL = 'https://tesloiq.onrender.com/api';
-    let localAccountBalance = 0;
-    let isBalanceHidden = false;
+  // ==========================================
+  // 1. STATE MANAGEMENT & INITIALIZATION
+  // ==========================================
+  const state = {
+    user: {
+      id: window.currentUserId || 'USER-1082',
+      name: 'Joshua Akinyele',
+      avatar: 'J'
+    },
+    balances: {
+      availableBalance: 12450.00,
+      totalInvestments: 8500.00,
+      totalPnL: 1240.50,
+      pnlPercentage: 14.60
+    },
+    cryptoWallets: {
+      btc: "bc1qy5nkg0rsu7w4vp63c0a3es26uxnhwrjyu2c0gn",
+      bnb: "0xcf9CF6cC3A8F314999c9d2ba1136cB07255eFf0B",
+      sol: "Bw3p4QqmNUKK19hqJXABZXrG3Z5ryAqHs1mLrdn1986g",
+      tron: "TNWjENWFiEhrEnwywLZL2y9Lw4S7WZj2dm",
+      ton: "UQBDFLB35M7QZtcYF7FW9aaF44sd7iLHlauVdyUAafp9SXQq",
+      sui: "0x7ab9b39eee123c5c2c035ee221ed77489957169448657c571ad2151a4991d341",
+      eth: "0xcf9CF6cC3A8F314999c9d2ba1136cB07255eFf0B"
+    },
+    transactions: [
+      { id: 'TX-109', type: 'deposit', desc: 'Bank Wire Transfer', date: '2026-08-01', amount: 2500.00 },
+      { id: 'TX-108', type: 'investment', desc: 'Purchased TSLA Stock', date: '2026-07-28', amount: 1500.00 },
+      { id: 'TX-107', type: 'withdraw', desc: 'Atmosphere Payout', date: '2026-07-20', amount: 450.00 },
+      { id: 'TX-106', type: 'investment', desc: 'Purchased NVDA Stock', date: '2026-07-15', amount: 3000.00 }
+    ],
+    holdings: [
+      { ticker: 'TSLA', name: 'Tesla Inc.', shares: 12, buyPrice: 210.50, currentPrice: 242.80, returnRate: 15.34 },
+      { ticker: 'NVDA', name: 'NVIDIA Corp.', shares: 25, buyPrice: 112.00, currentPrice: 128.40, returnRate: 14.64 },
+      { ticker: 'AAPL', name: 'Apple Inc.', shares: 10, buyPrice: 180.00, currentPrice: 224.20, returnRate: 24.55 }
+    ],
+    activeView: 'dashboardView',
+    isBalanceHidden: false,
+    currentSlide: 0,
+    activeMarket: 'stocks',
+    activeTimeframe: '1M',
+    chartInstance: null,
+    depositTimerInterval: null,
+    depositTimeRemaining: 600
+  };
 
-    // Chart Management Registry
-    let marketMetricChartInstance = null;
-
-    // View Routing Machine Architecture
-    function switchView(targetViewId) {
-        document.querySelectorAll('.view').forEach(view => view.classList.remove('active'));
-        document.getElementById(targetViewId).classList.add('active');
-
-        // Reset Active states across responsive sidebars and bars
-        const navIds = ['dash', 'invest', 'member'];
-        navIds.forEach(id => {
-            const dNode = document.getElementById(`d-nav-${id}`);
-            const mNode = document.getElementById(`m-nav-${id}`);
-            const bNode = document.getElementById(`b-nav-${id}`);
-            
-            const matchesView = (id === 'dash' && targetViewId === 'dashboardView') || 
-                                (id === 'invest' && targetViewId === 'investStockView') || 
-                                (id === 'member' && targetViewId === 'membershipView');
-
-            if (dNode) dNode.classList.toggle('active', matchesView);
-            if (mNode) mNode.classList.toggle('active', matchesView);
-            if (bNode) bNode.classList.toggle('active', matchesView);
-        });
+  const chartDataSets = {
+    stocks: {
+      '1D': { labels: ['09:30', '11:00', '12:30', '14:00', '16:00'], points: [240, 242, 241, 245, 244] },
+      '1W': { labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'], points: [235, 238, 240, 239, 244] },
+      '1M': { labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'], points: [210, 225, 235, 244] },
+      '3M': { labels: ['May', 'Jun', 'Jul', 'Aug'], points: [195, 210, 230, 244] },
+      '1Y': { labels: ['Q1', 'Q2', 'Q3', 'Q4'], points: [170, 190, 220, 244] },
+      'ALL': { labels: ['2023', '2024', '2025', '2026'], points: [120, 160, 210, 244] }
+    },
+    crypto: {
+      '1D': { labels: ['00:00', '06:00', '12:00', '18:00', '24:00'], points: [61000, 61500, 60800, 62200, 62800] },
+      '1W': { labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], points: [59000, 60200, 61000, 60500, 61800, 62400, 62800] },
+      '1M': { labels: ['W1', 'W2', 'W3', 'W4'], points: [54000, 57500, 60000, 62800] },
+      '3M': { labels: ['May', 'Jun', 'Jul', 'Aug'], points: [48000, 52000, 58000, 62800] },
+      '1Y': { labels: ['Q1', 'Q2', 'Q3', 'Q4'], points: [32000, 45000, 55000, 62800] },
+      'ALL': { labels: ['2023', '2024', '2025', '2026'], points: [16000, 30000, 48000, 62800] }
     }
+  };
 
-    function toggleDrawer() {
-        document.getElementById('drawerOverlay').classList.toggle('active');
-        document.getElementById('drawerMenu').classList.toggle('active');
-    }
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+  };
 
-    // Modal Presentation Machine
-    function openDepositModal() { document.getElementById('depositModal').classList.add('active'); }
-    function closeDepositModal() { document.getElementById('depositModal').classList.remove('active'); }
-    function openWithdrawModal() { document.getElementById('withdrawModal').classList.add('active'); }
-    function closeWithdrawModal() { document.getElementById('withdrawModal').classList.remove('active'); }
-    function closeModalOnOuterClick(e, modalId) { if (e.target.id === modalId) { document.getElementById(modalId).classList.remove('active'); } }
+  document.addEventListener('DOMContentLoaded', () => {
+    initUI();
+    initSlider();
+    initChart();
+    renderHoldingsTable();
+    renderTransactionTable();
+  });
 
-    function copyDepositWallet() {
-        const addrField = document.getElementById('depositWalletAddress');
-        navigator.clipboard.writeText(addrField.value);
-        alert("System address mapped into copy clipboard.");
-    }
+  function initUI() {
+    const nameStr = state.user.name;
+    const initial = state.user.avatar || nameStr.charAt(0).toUpperCase();
 
-    // Interactive Slider State Machine Tracking logic
-    let cardTrackElement = document.getElementById('cardTrack');
-    let dotElements = document.querySelectorAll('.dot');
-    let initialTouchX = 0;
-    let computedActiveIndex = 0;
+    const welcomeEl = document.getElementById('welcomeUserText');
+    if (welcomeEl) welcomeEl.innerText = `Welcome back, ${nameStr}`;
 
-    document.getElementById('sliderContainer').addEventListener('touchstart', e => { initialTouchX = e.touches[0].clientX; });
-    document.getElementById('sliderContainer').addEventListener('touchend', e => {
-        let terminalTouchX = e.changedTouches[0].clientX;
-        let deltaDifference = initialTouchX - terminalTouchX;
-
-        if (Math.abs(deltaDifference) > 50) {
-            if (deltaDifference > 0 && computedActiveIndex < 2) computedActiveIndex++;
-            else if (deltaDifference < 0 && computedActiveIndex > 0) computedActiveIndex--;
-            updateSliderUIConfiguration();
-        }
+    ['cardUserName', 'portfolioUserName', 'plUserName', 'desktopUserName'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.innerText = nameStr;
     });
 
-    function updateSliderUIConfiguration() {
-        cardTrackElement.style.transform = `translateX(-${computedActiveIndex * 33.333}%)`;
-        dotElements.forEach((dot, idx) => dot.classList.toggle('active', idx === computedActiveIndex));
+    const avatarEl = document.getElementById('desktopUserAvatar');
+    if (avatarEl) avatarEl.innerText = initial;
+
+    updateBalanceDisplay();
+  }
+
+  // ==========================================
+  // 2. NAVIGATION & DRAWER FUNCTIONALITY
+  // ==========================================
+  function switchView(viewId) {
+    state.activeView = viewId;
+
+    document.querySelectorAll('.view').forEach(view => {
+      view.classList.remove('active');
+    });
+    const targetView = document.getElementById(viewId);
+    if (targetView) targetView.classList.add('active');
+
+    const navMap = {
+      'dashboardView': 'dash',
+      'investStockView': 'invest',
+      'membershipView': 'member'
+    };
+    const activeKey = navMap[viewId];
+
+    document.querySelectorAll('.desktop-nav-item').forEach(el => el.classList.remove('active'));
+    const dActive = document.getElementById(`d-nav-${activeKey}`);
+    if (dActive) dActive.classList.add('active');
+
+    document.querySelectorAll('.drawer-item').forEach(el => el.classList.remove('active'));
+    const mActive = document.getElementById(`m-nav-${activeKey}`);
+    if (mActive) mActive.classList.add('active');
+  }
+
+  function toggleDrawer() {
+    const drawer = document.getElementById('drawerMenu');
+    const overlay = document.getElementById('drawerOverlay');
+    if (drawer && overlay) {
+      drawer.classList.toggle('active');
+      overlay.classList.toggle('active');
+    }
+  }
+
+  // ==========================================
+  // 3. ACCOUNT CARD CAROUSEL / SLIDER
+  // ==========================================
+  function initSlider() {
+    const container = document.getElementById('sliderContainer');
+    const track = document.getElementById('cardTrack');
+    if (!container || !track) return;
+
+    let startX = 0;
+    let isDragging = false;
+
+    container.addEventListener('touchstart', (e) => {
+      startX = e.touches[0].clientX;
+      isDragging = true;
+    }, { passive: true });
+
+    container.addEventListener('touchend', (e) => {
+      if (!isDragging) return;
+      isDragging = false;
+      const endX = e.changedTouches[0].clientX;
+      const diff = startX - endX;
+
+      if (diff > 50 && state.currentSlide < 2) {
+        state.currentSlide++;
+      } else if (diff < -50 && state.currentSlide > 0) {
+        state.currentSlide--;
+      }
+      updateSliderPosition();
+    });
+
+    container.addEventListener('mousedown', (e) => {
+      startX = e.clientX;
+      isDragging = true;
+    });
+
+    container.addEventListener('mouseup', (e) => {
+      if (!isDragging) return;
+      isDragging = false;
+      const diff = startX - e.clientX;
+      if (diff > 50 && state.currentSlide < 2) {
+        state.currentSlide++;
+      } else if (diff < -50 && state.currentSlide > 0) {
+        state.currentSlide--;
+      }
+      updateSliderPosition();
+    });
+
+    container.addEventListener('mouseleave', () => { isDragging = false; });
+  }
+
+  function updateSliderPosition() {
+    const track = document.getElementById('cardTrack');
+    const dots = document.querySelectorAll('.slider-dots .dot');
+    if (!track) return;
+
+    const translatePercentages = [0, -33.333, -66.666];
+    track.style.transform = `translateX(${translatePercentages[state.currentSlide]}%)`;
+
+    dots.forEach((dot, index) => {
+      if (index === state.currentSlide) {
+        dot.classList.add('active');
+      } else {
+        dot.classList.remove('active');
+      }
+    });
+  }
+
+  function toggleBalanceVisibility(event) {
+    if (event) event.stopPropagation();
+    state.isBalanceHidden = !state.isBalanceHidden;
+
+    const eyeIcon = document.querySelector('.eye-icon');
+    if (eyeIcon) {
+      if (state.isBalanceHidden) {
+        eyeIcon.classList.remove('fa-eye');
+        eyeIcon.classList.add('fa-eye-slash');
+      } else {
+        eyeIcon.classList.remove('fa-eye-slash');
+        eyeIcon.classList.add('fa-eye');
+      }
+    }
+    updateBalanceDisplay();
+  }
+
+  function updateBalanceDisplay() {
+    const balEl = document.getElementById('balanceText');
+    const portEl = document.getElementById('portfolioText');
+    const plEl = document.getElementById('plText');
+    const plBadge = document.getElementById('plPercentageBadge');
+
+    if (balEl) {
+      balEl.innerText = state.isBalanceHidden ? '••••••••' : formatCurrency(state.balances.availableBalance);
+    }
+    if (portEl) {
+      portEl.innerText = state.isBalanceHidden ? '••••••••' : formatCurrency(state.balances.totalInvestments);
+    }
+    if (plEl) {
+      plEl.innerText = state.isBalanceHidden ? '••••••••' : `+${formatCurrency(state.balances.totalPnL)}`;
+    }
+    if (plBadge) {
+      plBadge.innerText = `Performance +${state.balances.pnlPercentage.toFixed(2)}%`;
+    }
+  }
+
+  // ==========================================
+  // 4 & 5. MODALS & TRANSACTION ACTIONS
+  // ==========================================
+  function createModalContainer() {
+    let overlay = document.getElementById('dynamicModalOverlay');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'dynamicModalOverlay';
+      overlay.className = 'modal-overlay';
+      overlay.onclick = (e) => {
+        if (e.target === overlay) closeModal();
+      };
+      document.body.appendChild(overlay);
+    }
+    return overlay;
+  }
+
+  function openDepositModal() {
+    const overlay = createModalContainer();
+    overlay.innerHTML = `
+      <div class="modal-body" onclick="event.stopPropagation()">
+        <div class="modal-title">
+          <span><i class="fa-solid fa-arrow-down" style="color:#3fb950;"></i> Deposit Funds</span>
+          <button class="modal-close" onclick="closeModal()">&times;</button>
+        </div>
+        <form onsubmit="handleDepositSubmit(event)">
+          <div class="form-group">
+            <label class="form-label">Amount ($)</label>
+            <input type="number" step="0.01" class="form-input" id="depositAmount" placeholder="e.g. 500.00" required min="10" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Payment Source</label>
+            <select class="form-input" id="depositMethod" onchange="handleDepositMethodChange(this.value)">
+              <option value="Wire Transfer">Bank Wire Transfer</option>
+              <option value="Debit Card">Debit / Credit Card</option>
+              <option value="btc">BTC (Bitcoin)</option>
+              <option value="bnb">BNB (BEP 20)</option>
+              <option value="sol">Solana (SOL)</option>
+              <option value="tron">Tron (TRC 20)</option>
+              <option value="ton">Ton (TON)</option>
+              <option value="sui">Sui (SUI)</option>
+              <option value="eth">Eth (ERC 20)</option>
+            </select>
+          </div>
+          <div id="walletAddressContainer" style="display:none;" class="form-group">
+            <label class="form-label">Send payment to address:</label>
+            <div class="wallet-display-box">
+              <span id="walletAddressDisplay" class="wallet-address-text"></span>
+              <button type="button" class="copy-btn" onclick="copyWalletAddress()"><i class="fa-regular fa-copy"></i> Copy Address</button>
+              
+              <div class="payment-timer-wrapper">
+                <span class="timer-title-lbl"><i class="fa-solid fa-clock-rotate-left"></i> Payment Window</span>
+                <span id="depositCountdownTimer" class="timer-countdown-clock">10:00</span>
+              </div>
+              <button type="button" class="btn-paid-trigger" id="iHavePaidBtn" onclick="triggerPaidSuccess()"><i class="fa-solid fa-circle-check"></i> I Have Paid</button>
+            </div>
+          </div>
+          <button type="submit" id="mainDepositSubmitBtn" class="tier-action-trigger" style="background:#238636; margin-top:12px;">Complete Deposit</button>
+        </form>
+      </div>
+    `;
+    setTimeout(() => overlay.classList.add('active'), 10);
+  }
+
+  function handleDepositMethodChange(val) {
+    const container = document.getElementById('walletAddressContainer');
+    const display = document.getElementById('walletAddressDisplay');
+    const submitBtn = document.getElementById('mainDepositSubmitBtn');
+    
+    if (state.cryptoWallets[val]) {
+      display.innerText = state.cryptoWallets[val];
+      container.style.display = 'block';
+      if (submitBtn) submitBtn.style.display = 'none';
+      startDepositCountdown();
+    } else {
+      container.style.display = 'none';
+      if (submitBtn) submitBtn.style.display = 'block';
+      clearInterval(state.depositTimerInterval);
+    }
+  }
+
+  function startDepositCountdown() {
+    clearInterval(state.depositTimerInterval);
+    state.depositTimeRemaining = 600; // Reset to 10 mins
+
+    const timerClock = document.getElementById('depositCountdownTimer');
+    const paidBtn = document.getElementById('iHavePaidBtn');
+
+    if (paidBtn) paidBtn.disabled = false;
+
+    state.depositTimerInterval = setInterval(() => {
+      state.depositTimeRemaining--;
+      
+      const minutes = Math.floor(state.depositTimeRemaining / 60);
+      const seconds = state.depositTimeRemaining % 60;
+      
+      if (timerClock) {
+        timerClock.innerText = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+      }
+
+      if (state.depositTimeRemaining <= 0) {
+        clearInterval(state.depositTimerInterval);
+        if (timerClock) timerClock.innerText = "00:00";
+        if (paidBtn) {
+          paidBtn.disabled = true;
+          paidBtn.innerText = "Payment Window Expired";
+        }
+      }
+    }, 1000);
+  }
+
+  function triggerPaidSuccess() {
+    const amountVal = parseFloat(document.getElementById('depositAmount').value);
+    
+    if (isNaN(amountVal) || amountVal <= 0) {
+      alert('Please enter a valid deposit amount before confirming payment.');
+      return;
     }
 
-    function toggleBalanceVisibility(e) {
-        e.stopPropagation();
-        isBalanceHidden = !isBalanceHidden;
-        const visibilityIcon = e.target;
-        if (isBalanceHidden) {
-            document.getElementById('balanceText').innerText = "••••••";
-            visibilityIcon.className = "fa-regular fa-eye-slash eye-icon";
+    clearInterval(state.depositTimerInterval);
+
+    state.balances.availableBalance += amountVal;
+    const selectEl = document.getElementById('depositMethod');
+    const method = selectEl.options[selectEl.selectedIndex].text;
+
+    state.transactions.unshift({
+      id: `TX-${Math.floor(100 + Math.random() * 900)}`,
+      type: 'deposit',
+      desc: method,
+      date: new Date().toISOString().split('T')[0],
+      amount: amountVal
+    });
+
+    updateBalanceDisplay();
+    renderTransactionTable();
+    closeModal();
+    openSuccessModal(amountVal);
+  }
+
+  function openSuccessModal(amount) {
+    let overlay = document.getElementById('successModalOverlay');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'successModalOverlay';
+      overlay.className = 'success-modal-overlay';
+      document.body.appendChild(overlay);
+    }
+
+    overlay.innerHTML = `
+      <div class="success-card-body">
+        <div class="success-icon-badge">
+          <i class="fa-solid fa-check"></i>
+        </div>
+        <div class="success-card-title">Payment Submitted</div>
+        <div class="success-card-desc">
+          Your payment of <strong>${formatCurrency(amount)}</strong> has been registered. Your balance will update automatically upon blockchain confirmation.
+        </div>
+        <button class="tier-action-trigger" style="background:#238636;" onclick="closeSuccessModal()">Awesome, Got It!</button>
+      </div>
+    `;
+
+    setTimeout(() => overlay.classList.add('active'), 10);
+  }
+
+  function closeSuccessModal() {
+    const overlay = document.getElementById('successModalOverlay');
+    if (overlay) {
+      overlay.classList.remove('active');
+      setTimeout(() => { overlay.remove(); }, 300);
+    }
+  }
+
+  function copyWalletAddress() {
+    const address = document.getElementById('walletAddressDisplay').innerText;
+    if (address) {
+      navigator.clipboard.writeText(address);
+      alert('Wallet address copied to clipboard!');
+    }
+  }
+
+  function openWithdrawModal() {
+    const overlay = createModalContainer();
+    overlay.innerHTML = `
+      <div class="modal-body" onclick="event.stopPropagation()">
+        <div class="modal-title">
+          <span><i class="fa-solid fa-arrow-up" style="color:#f85149;"></i> Withdraw Funds</span>
+          <button class="modal-close" onclick="closeModal()">&times;</button>
+        </div>
+        <form onsubmit="handleWithdrawSubmit(event)">
+          <div class="form-group">
+            <label class="form-label">Amount ($)</label>
+            <input type="number" step="0.01" class="form-input" id="withdrawAmount" placeholder="e.g. 200.00" required min="10" />
+            <span style="font-size:10px; color:#8b949e; display:block; margin-top:4px;">Available: ${formatCurrency(state.balances.availableBalance)}</span>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Destination Account / Crypto Address</label>
+            <input type="text" class="form-input" placeholder="Account Number or Wallet Address" required />
+          </div>
+          <button type="submit" class="tier-action-trigger" style="background:#da3633; margin-top:12px;">Confirm Withdrawal</button>
+        </form>
+      </div>
+    `;
+    setTimeout(() => overlay.classList.add('active'), 10);
+  }
+
+  function closeModal() {
+    clearInterval(state.depositTimerInterval);
+    const overlay = document.getElementById('dynamicModalOverlay');
+    if (overlay) {
+      overlay.classList.remove('active');
+      setTimeout(() => { overlay.remove(); }, 300);
+    }
+  }
+
+  function handleDepositSubmit(e) {
+    e.preventDefault();
+    const val = parseFloat(document.getElementById('depositAmount').value);
+    const selectEl = document.getElementById('depositMethod');
+    const method = selectEl.options[selectEl.selectedIndex].text;
+    
+    if (isNaN(val) || val <= 0) return;
+
+    state.balances.availableBalance += val;
+    state.transactions.unshift({
+      id: `TX-${Math.floor(100 + Math.random() * 900)}`,
+      type: 'deposit',
+      desc: method,
+      date: new Date().toISOString().split('T')[0],
+      amount: val
+    });
+
+    updateBalanceDisplay();
+    renderTransactionTable();
+    closeModal();
+    openSuccessModal(val);
+  }
+
+  function handleWithdrawSubmit(e) {
+    e.preventDefault();
+    const val = parseFloat(document.getElementById('withdrawAmount').value);
+    if (isNaN(val) || val <= 0) return;
+
+    if (val > state.balances.availableBalance) {
+      alert('Insufficient available balance for this withdrawal.');
+      return;
+    }
+
+    state.balances.availableBalance -= val;
+    state.transactions.unshift({
+      id: `TX-${Math.floor(100 + Math.random() * 900)}`,
+      type: 'withdraw',
+      desc: 'Withdrawal Request',
+      date: new Date().toISOString().split('T')[0],
+      amount: val
+    });
+
+    updateBalanceDisplay();
+    renderTransactionTable();
+    closeModal();
+  }
+
+  function handleBuyStock(ticker, name, price) {
+    if (state.balances.availableBalance < price) {
+      alert('Insufficient available balance to buy this stock position.');
+      return;
+    }
+
+    state.balances.availableBalance -= price;
+    state.balances.totalInvestments += price;
+
+    const existing = state.holdings.find(h => h.ticker === ticker);
+    if (existing) {
+      existing.shares += 1;
+    } else {
+      state.holdings.push({
+        ticker,
+        name,
+        shares: 1,
+        buyPrice: price,
+        currentPrice: price,
+        returnRate: 1.00
+      });
+    }
+
+    state.transactions.unshift({
+      id: `TX-${Math.floor(100 + Math.random() * 900)}`,
+      type: 'investment',
+      desc: `Purchased 1 ${ticker} Stock`,
+      date: new Date().toISOString().split('T')[0],
+      amount: price
+    });
+
+    updateBalanceDisplay();
+    renderHoldingsTable();
+    renderTransactionTable();
+    alert(`Successfully acquired 1 share of ${ticker}!`);
+  }
+
+  // ==========================================
+  // 6. LIVE MARKET CHART (CHART.JS INTEGRATION)
+  // ==========================================
+  function initChart() {
+    const canvas = document.getElementById('marketMetricChart');
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    const gradient = ctx.createLinearGradient(0, 0, 0, 200);
+    gradient.addColorStop(0, 'rgba(63, 185, 80, 0.35)');
+    gradient.addColorStop(1, 'rgba(63, 185, 80, 0.0)');
+
+    const currentSet = chartDataSets[state.activeMarket][state.activeTimeframe];
+
+    state.chartInstance = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: currentSet.labels,
+        datasets: [{
+          label: 'Market Index',
+          data: currentSet.points,
+          borderColor: '#3fb950',
+          borderWidth: 2,
+          fill: true,
+          backgroundColor: gradient,
+          tension: 0.35,
+          pointRadius: 3,
+          pointBackgroundColor: '#3fb950'
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { grid: { display: false }, ticks: { color: '#6e7681', font: { size: 10 } } },
+          y: { grid: { color: '#1f2533' }, ticks: { color: '#6e7681', font: { size: 10 } } }
+        }
+      }
+    });
+
+    document.querySelectorAll('.selector-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        document.querySelectorAll('.selector-btn').forEach(b => b.classList.remove('active'));
+        e.target.classList.add('active');
+        state.activeMarket = e.target.innerText.toLowerCase().includes('stock') ? 'stocks' : 'crypto';
+        
+        const title = document.getElementById('marketTickerTitle');
+        const amt = document.getElementById('marketTickerAmt');
+        if (state.activeMarket === 'stocks') {
+          if (title) title.innerText = 'S&P 500 Index';
+          if (amt) amt.innerText = '$5,420.10';
         } else {
-            document.getElementById('balanceText').innerText = `$${localAccountBalance.toFixed(2)}`;
-            visibilityIcon.className = "fa-regular fa-eye eye-icon";
+          if (title) title.innerText = 'Bitcoin / USD';
+          if (amt) amt.innerText = '$62,800.00';
         }
-    }
-
-    // Core Data Initialization Processing Engine
-    window.addEventListener('DOMContentLoaded', () => {
-        if (window.currentUserId) {
-            loadUserProfileCoreInformation();
-            fetchSynchronizedNetworkTransactions();
-            initializeVisualizationChart();
-        }
+        updateChartData();
+      });
     });
 
-    async function loadUserProfileCoreInformation() {
-        try {
-            const profileResponse = await fetch(`${API_BASE_URL}/auth/user/${window.currentUserId}`);
-            if (!profileResponse.ok) throw new Error("Ledger identity profile offline.");
-            const userObj = await profileResponse.json();
+    document.querySelectorAll('.tf-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        document.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('active'));
+        e.target.classList.add('active');
+        state.activeTimeframe = e.target.innerText.trim();
+        updateChartData();
+      });
+    });
+  }
 
-            // Populate Layout Profile Strings
-            document.getElementById('welcomeUserText').innerText = `Welcome back, ${userObj.name || 'Investor'}`;
-            document.getElementById('desktopUserName').innerText = userObj.name || 'Investor';
-            document.getElementById('cardUserName').innerText = userObj.name || 'Investor';
-            document.getElementById('portfolioUserName').innerText = userObj.name || 'Investor';
-            document.getElementById('plUserName').innerText = userObj.name || 'Investor';
-            
-            const letterInitial = userObj.name ? userObj.name.charAt(0).toUpperCase() : 'U';
-            document.getElementById('desktopUserAvatar').innerText = letterInitial;
-            document.getElementById('mobileUserAvatar').innerText = letterInitial;
-        } catch (profileErr) {
-            console.error("Profile identity parsing anomaly:", profileErr);
-        }
+  function updateChartData() {
+    if (!state.chartInstance) return;
+    const currentSet = chartDataSets[state.activeMarket][state.activeTimeframe];
+    state.chartInstance.data.labels = currentSet.labels;
+    state.chartInstance.data.datasets[0].data = currentSet.points;
+    state.chartInstance.update();
+  }
+
+  // ==========================================
+  // 7. ACTIVE HOLDINGS & DYNAMIC TABLES
+  // ==========================================
+  function renderHoldingsTable() {
+    const tbody = document.getElementById('activeStockHoldingsBody');
+    if (!tbody) return;
+
+    if (state.holdings.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#6e7681; padding:16px;">No active stock positions found.</td></tr>`;
+      return;
     }
 
-    async function fetchSynchronizedNetworkTransactions() {
-        const listContainer = document.getElementById('transactionList');
-        const activeHoldingsBody = document.getElementById('activeStockHoldingsBody');
-        
-        try {
-            const response = await fetch(`${API_BASE_URL}/transactions?userId=${window.currentUserId}`);
-            if (!response.ok) throw new Error("Synchronization parameters faulty.");
-            const fullHistoryList = await response.json();
+    tbody.innerHTML = state.holdings.map(item => {
+      const val = item.shares * item.currentPrice;
+      return `
+        <tr>
+          <td>
+            <div style="font-weight:700; color:#fff;">${item.ticker}</div>
+            <div style="font-size:10px; color:#6e7681;">${item.name}</div>
+          </td>
+          <td>${item.shares}</td>
+          <td style="font-weight:600; color:#fff;">${formatCurrency(val)}</td>
+          <td style="color:#3fb950; font-weight:700;">+${item.returnRate.toFixed(2)}%</td>
+        </tr>
+      `;
+    }).join('');
+  }
 
-            // Render Recent Actions Elements Table Matrix
-            if (fullHistoryList.length === 0) {
-                listContainer.innerHTML = `<tr><td colspan="3" style="text-align:center; color:#8b949e; padding:20px 0;">No history logs registered.</td></tr>`;
-                document.getElementById('balanceText').innerText = "$0.00";
-                return;
-            }
+  function renderTransactionTable() {
+    const tbody = document.getElementById('transactionTableBody');
+    if (!tbody) return;
 
-            // Reverse to display newest first
-            const chronologicalHistory = [...fullHistoryList].reverse();
-            
-            // Core Financial Math Architecture
-            let calculatedBalance = 0;
-            let currentTotalStockInvestment = 0;
-            let initialTotalStockInvestmentPrincipal = 0;
-            let recentLogsHtml = "";
-            let stocksHoldingsHtml = "";
-
-            chronologicalHistory.forEach((tx, idx) => {
-                const numAmt = parseFloat(tx.amount);
-                
-                // Track historical types standardizing totals
-                if (tx.type === 'deposit') calculatedBalance += numAmt;
-                if (tx.type === 'withdraw') calculatedBalance -= numAmt;
-                if (tx.type === 'investment') calculatedBalance -= numAmt;
-
-                // Render first 5 items into recent logs UI display framework
-                if (idx < 5) {
-                    let typeBadgeClass = tx.type === 'deposit' ? 'deposit' : tx.type === 'withdraw' ? 'withdraw' : 'investment';
-                    let amtStyleClass = tx.type === 'deposit' ? 'deposit' : tx.type === 'withdraw' ? 'withdraw' : 'investment';
-                    let amtPrefix = tx.type === 'deposit' ? '+' : '-';
-
-                    recentLogsHtml += `
-                        <tr>
-                            <td><span class="tx-badge-type ${typeBadgeClass}">${tx.type}</span></td>
-                            <td class="tx-desc-cell">${tx.desc || 'General Node Action'}<div class="tx-desc-subtext">${tx.createdAt ? new Date(tx.createdAt).toLocaleDateString() : 'Recent'}</div></td>
-                            <td class="tx-amt-cell ${amtStyleClass}">${amtPrefix}$${numAmt.toFixed(2)}</td>
-                        </tr>
-                    `;
-                }
-
-                // Process Compound Math logic on Stocks Investments
-                if (tx.type === 'investment' || (tx.desc && tx.desc.includes('Investment —'))) {
-                    const principalVal = numAmt;
-                    const investmentTimestamp = tx.createdAt ? new Date(tx.createdAt) : new Date();
-                    const liveTimestamp = new Date();
-                    
-                    const timeWindowDiff = liveTimestamp.getTime() - investmentTimestamp.getTime();
-                    const computationalDaysElapsed = Math.max(0, Math.floor(timeWindowDiff / (1000 * 60 * 60 * 24)));
-                    
-                    // Compounding: FV = PV * (1 + r)^n
-                    const compoundedLiveValue = principalVal * Math.pow(1 + 0.01, computationalDaysElapsed);
-                    const specificAssetProfit = compoundedLiveValue - principalVal;
-                    const growthPercent = ((compoundedLiveValue - principalVal) / principalVal) * 100;
-
-                    initialTotalStockInvestmentPrincipal += principalVal;
-                    currentTotalStockInvestment += compoundedLiveValue;
-
-                    stocksHoldingsHtml += `
-                        <tr>
-                            <td style="font-weight:700; color:#fff;">${tx.desc.replace('Investment — ', '')}</td>
-                            <td>$${principalVal.toFixed(2)}</td>
-                            <td style="color:#58a6ff; font-weight:600;">$${compoundedLiveValue.toFixed(2)}</td>
-                            <td style="text-align:right; color:#3fb950; font-weight:700;">+${growthPercent.toFixed(2)}%</td>
-                        </tr>
-                    `;
-                }
-            });
-
-            // Update local memory structures
-            localAccountBalance = calculatedBalance;
-            if (!isBalanceHidden) {
-                document.getElementById('balanceText').innerText = `$${localAccountBalance.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
-            }
-
-            // Update Portfolio Screen UI Metrics
-            document.getElementById('portfolioText').innerText = `$${currentTotalStockInvestment.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
-            
-            const comprehensiveProfitLoss = currentTotalStockInvestment - initialTotalStockInvestmentPrincipal;
-            const aggregateProfitLossPercent = initialTotalStockInvestmentPrincipal > 0 ? (comprehensiveProfitLoss / initialTotalStockInvestmentPrincipal) * 100 : 0;
-            
-            document.getElementById('plText').innerText = `+$${comprehensiveProfitLoss.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
-            document.getElementById('plPercentageBadge').innerText = `Performance +${aggregateProfitLossPercent.toFixed(2)}%`;
-
-            // Commit generated segments to view layout nodes
-            listContainer.innerHTML = recentLogsHtml;
-            if (stocksHoldingsHtml !== "") {
-                activeHoldingsBody.innerHTML = stocksHoldingsHtml;
-            } else {
-                activeHoldingsBody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: #8b949e; font-style: italic; padding: 16px 0;">No active equity configurations found.</td></tr>`;
-            }
-
-        } catch (historyErr) {
-            console.error("Error evaluating database transaction values:", historyErr);
-            listContainer.innerHTML = `<tr><td colspan="3" style="text-align:center; color:#f85149; padding:20px 0;">Network Engine Synchronization Fault.</td></tr>`;
-        }
+    if (state.transactions.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; color:#6e7681; padding:16px;">No recent transactions.</td></tr>`;
+      return;
     }
 
-    async function submitDepositOrder() {
-        const depositQuantumNode = document.getElementById('depositAmountInput');
-        const targetQuantumValue = parseFloat(depositQuantumNode.value);
+    tbody.innerHTML = state.transactions.map(tx => {
+      const sign = tx.type === 'withdraw' ? '-' : '+';
+      return `
+        <tr>
+          <td style="width: 25%;">
+            <span class="tx-badge-type ${tx.type}">${tx.type}</span>
+          </td>
+          <td class="tx-desc-cell">
+            <div>${tx.desc}</div>
+            <div class="tx-desc-subtext">${tx.date}</div>
+          </td>
+          <td class="tx-amt-cell ${tx.type}">
+            ${sign}${formatCurrency(tx.amount)}
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
 
-        if (!targetQuantumValue || targetQuantumValue <= 0) {
-            alert("Please input a valid target capital quantum amount.");
-            return;
-        }
-
-        try {
-            const res = await fetch(`${API_BASE_URL}/transactions`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    userId: window.currentUserId,
-                    type: 'deposit',
-                    amount: targetQuantumValue,
-                    desc: 'Capital Allocation Pool Deposit'
-                })
-            });
-
-            if (!res.ok) throw new Error("Internal processing server block.");
-            
-            alert("Capital deposit parameters declared successfully!");
-            depositQuantumNode.value = "";
-            closeDepositModal();
-            fetchSynchronizedNetworkTransactions();
-
-        } catch (err) {
-            alert(`Execution failed: ${err.message}`);
-        }
+  // ==========================================
+  // 8. AUTHENTICATION & LOGOUT
+  // ==========================================
+  function handleLogout() {
+    if (confirm('Are you sure you want to log out of Tesloiq?')) {
+      localStorage.removeItem('userId');
+      window.location.replace('./Sign_In.html');
     }
-
-    async function submitWithdrawalOrder() {
-        const withdrawAmountNode = document.getElementById('withdrawAmountInput');
-        const targetWithdrawAddressNode = document.getElementById('withdrawWalletInput');
-        
-        const numericAmount = parseFloat(withdrawAmountNode.value);
-        const protocolAddress = targetWithdrawAddressNode.value.trim();
-
-        if (!numericAmount || numericAmount <= 0) {
-            alert("Please input a legitimate reserves allocation amount.");
-            return;
-        }
-        if (!protocolAddress) {
-            alert("Payout target protocol network address missing.");
-            return;
-        }
-        if (numericAmount > localAccountBalance) {
-            alert("Requested allocation transcends currently authorized balance metrics.");
-            return;
-        }
-
-        try {
-            const res = await fetch(`${API_BASE_URL}/transactions`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    userId: window.currentUserId,
-                    type: 'withdraw',
-                    amount: numericAmount,
-                    desc: `Withdrawal to ${protocolAddress.substring(0,6)}...`
-                })
-            });
-
-            if (!res.ok) throw new Error("Withdraw processing error.");
-
-            alert("Secure withdrawal process initialized!");
-            withdrawAmountNode.value = "";
-            targetWithdrawAddressNode.value = "";
-            closeWithdrawModal();
-            fetchSynchronizedNetworkTransactions();
-
-        } catch (err) {
-            alert(`Execution failed: ${err.message}`);
-        }
-    }
-
-    async function executeStockPurchase(stockName, stockVal) {
-        if (localAccountBalance < stockVal) {
-            alert(`Insufficient capital pool. Purchase of ${stockName} requires $${stockVal.toFixed(2)}.`);
-            return;
-        }
-
-        const authorizeChoice = confirm(`Authorize asset deployment allocation into ${stockName} for $${stockVal}?`);
-        if (!authorizeChoice) return;
-
-        try {
-            const postResponse = await fetch(`${API_BASE_URL}/transactions`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    userId: window.currentUserId,
-                    type: 'investment',
-                    amount: stockVal,
-                    desc: `Investment — ${stockName}`
-                })
-            });
-
-            if (!postResponse.ok) throw new Error("Database interface rejection.");
-
-            alert(`Equity configuration lock complete! Bought 1 unit of ${stockName}.`);
-            fetchSynchronizedNetworkTransactions();
-            switchView('dashboardView');
-
-        } catch (purchaseErr) {
-            alert(`Equity routing error: ${purchaseErr.message}`);
-        }
-    }
-
-    async function applyMembershipPlan(tierTitle, premiumPrice) {
-        if (localAccountBalance < premiumPrice) {
-            alert(`Upgrade blocked: Insufficient balance pool to acquire ${tierTitle} tier.`);
-            return;
-        }
-
-        const choice = confirm(`Authorize $${premiumPrice} allocation to buy the ${tierTitle} Member Card?`);
-        if (!choice) return;
-
-        try {
-            const res = await fetch(`${API_BASE_URL}/transactions`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    userId: window.currentUserId,
-                    type: 'withdraw',
-                    amount: premiumPrice,
-                    desc: `Purchased Membership Card — ${tierTitle}`
-                })
-            });
-
-            if (!res.ok) throw new Error("Transaction logging error.");
-
-            alert(`Congratulations! You are now an active ${tierTitle} Tier Member.`);
-            fetchSynchronizedNetworkTransactions();
-            switchView('dashboardView');
-
-        } catch (err) {
-            alert(`Application blocked: ${err.message}`);
-        }
-    }
-
-    function initializeVisualizationChart() {
-        const targetCtx = document.getElementById('marketMetricChart').getContext('2d');
-        marketMetricChartInstance = new Chart(targetCtx, {
-            type: 'line',
-            data: {
-                labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-                datasets: [{
-                    label: 'Market Index Metric',
-                    data: [420, 428, 425, 439, 435, 441, 444.81],
-                    borderColor: '#3fb950',
-                    borderWidth: 2,
-                    pointRadius: 0,
-                    tension: 0.3,
-                    fill: true,
-                    backgroundColor: (context) => {
-                        const gradient = context.chart.ctx.createLinearGradient(0, 0, 0, 140);
-                        gradient.addColorStop(0, 'rgba(63, 185, 80, 0.2)');
-                        gradient.addColorStop(1, 'rgba(63, 185, 80, 0.0)');
-                        return gradient;
-                    }
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    x: { grid: { display: false }, ticks: { color: '#6e7681', font: { size: 9 } } },
-                    y: { grid: { color: '#21262d' }, ticks: { color: '#6e7681', font: { size: 9 } } }
-                }
-            }
-        });
-    }
-
-    function handleLogout() {
-        localStorage.clear();
-        window.location.replace('./Sign_In.html');
-    }
+  }
 </script>
 </body>
 </html>
