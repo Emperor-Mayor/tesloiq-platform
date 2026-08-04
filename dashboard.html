@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tesloiq Dashboard</title>
+    <script src="./api.js"></script>
     <script>
       // Security Gate: Check for authenticated userId matching server schema structure
       let currentUserId = localStorage.getItem('userId');
@@ -528,6 +529,18 @@
 
                 <div class="invest-card">
                     <div>
+                        <span class="invest-ticker-tag">SPACEX</span>
+                        <h4>SpaceX</h4>
+                        <p>Aerospace & Spaceflight</p>
+                    </div>
+                    <div>
+                        <div class="invest-card-price">$220.00</div>
+                        <button class="invest-card-btn" onclick="handleBuyStock('SPACEX', 'SpaceX', 220.00)">Buy Stock</button>
+                    </div>
+                </div>
+
+                <div class="invest-card">
+                    <div>
                         <span class="invest-ticker-tag">NVDA</span>
                         <h4>NVIDIA Corp.</h4>
                         <p>Semiconductors & AI</p>
@@ -694,7 +707,7 @@
       avatar: 'K'
     },
     balances: {
-      availableBalance: 250000.00,
+      availableBalance: 0.00,
       totalInvestments: 0.00,
       totalPnL: 0.00,
       pnlPercentage: 0.00
@@ -708,9 +721,7 @@
       sui: "0x7ab9b39eee123c5c2c035ee221ed77489957169448657c571ad2151a4991d341",
       eth: "0xcf9CF6cC3A8F314999c9d2ba1136cB07255eFf0B"
     },
-    transactions: [
-      { id: 'TX-101', type: 'deposit', desc: 'Admin deposit', date: '2026-08-04', amount: 250000.00 }
-    ],
+    transactions: [],
     holdings: [],
     activeView: 'dashboardView',
     isBalanceHidden: false,
@@ -745,13 +756,30 @@
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
   };
 
-  document.addEventListener('DOMContentLoaded', () => {
+  document.addEventListener('DOMContentLoaded', async () => {
+    await loadInitialAPIData();
     initUI();
     initSlider();
     initChart();
     renderHoldingsTable();
     renderTransactionTable();
   });
+
+  // Load profile and transaction data from remote API
+  async function loadInitialAPIData() {
+    const profile = await fetchUserProfile(state.user.id);
+    if (profile) {
+      state.user.name = profile.name || profile.username || state.user.name;
+      state.user.avatar = state.user.name.charAt(0).toUpperCase();
+      state.balances.availableBalance = parseFloat(profile.balance || profile.availableBalance || 0);
+      state.balances.totalInvestments = parseFloat(profile.totalInvestments || 0);
+    }
+    
+    const txs = await fetchUserTransactions(state.user.id);
+    if (Array.isArray(txs)) {
+      state.transactions = txs;
+    }
+  }
 
   function initUI() {
     const nameStr = state.user.name;
@@ -1023,7 +1051,7 @@
     }, 1000);
   }
 
-  function triggerPaidSuccess() {
+  async function triggerPaidSuccess() {
     const amountVal = parseFloat(document.getElementById('depositAmount').value);
     
     if (isNaN(amountVal) || amountVal <= 0) {
@@ -1033,22 +1061,28 @@
 
     clearInterval(state.depositTimerInterval);
 
-    state.balances.availableBalance += amountVal;
     const selectEl = document.getElementById('depositMethod');
     const method = selectEl.options[selectEl.selectedIndex].text;
 
-    state.transactions.unshift({
-      id: `TX-${Math.floor(100 + Math.random() * 900)}`,
-      type: 'deposit',
-      desc: method,
-      date: new Date().toISOString().split('T')[0],
-      amount: amountVal
-    });
+    try {
+      await postTransaction(state.user.id, 'deposit', amountVal, `Crypto Deposit (${method})`);
+      state.balances.availableBalance += amountVal;
 
-    updateBalanceDisplay();
-    renderTransactionTable();
-    closeModal();
-    openSuccessModal(amountVal);
+      state.transactions.unshift({
+        id: `TX-${Math.floor(100 + Math.random() * 900)}`,
+        type: 'deposit',
+        desc: method,
+        date: new Date().toISOString().split('T')[0],
+        amount: amountVal
+      });
+
+      updateBalanceDisplay();
+      renderTransactionTable();
+      closeModal();
+      openSuccessModal(amountVal);
+    } catch (err) {
+      alert(err.message || "Deposit transaction could not be recorded.");
+    }
   }
 
   function openSuccessModal(amount) {
@@ -1075,7 +1109,6 @@
 
     setTimeout(() => overlay.classList.add('active'), 10);
 
-    // Automatically navigate back to Dashboard after 2 seconds
     setTimeout(() => {
       closeSuccessModal();
     }, 2000);
@@ -1087,7 +1120,6 @@
       overlay.classList.remove('active');
       setTimeout(() => { overlay.remove(); }, 300);
     }
-    // Switch view back to Dashboard automatically
     switchView('dashboardView');
   }
 
@@ -1133,7 +1165,7 @@
     }
   }
 
-  function handleDepositSubmit(e) {
+  async function handleDepositSubmit(e) {
     e.preventDefault();
     const val = parseFloat(document.getElementById('depositAmount').value);
     const selectEl = document.getElementById('depositMethod');
@@ -1141,22 +1173,27 @@
     
     if (isNaN(val) || val <= 0) return;
 
-    state.balances.availableBalance += val;
-    state.transactions.unshift({
-      id: `TX-${Math.floor(100 + Math.random() * 900)}`,
-      type: 'deposit',
-      desc: method,
-      date: new Date().toISOString().split('T')[0],
-      amount: val
-    });
+    try {
+      await postTransaction(state.user.id, 'deposit', val, method);
+      state.balances.availableBalance += val;
+      state.transactions.unshift({
+        id: `TX-${Math.floor(100 + Math.random() * 900)}`,
+        type: 'deposit',
+        desc: method,
+        date: new Date().toISOString().split('T')[0],
+        amount: val
+      });
 
-    updateBalanceDisplay();
-    renderTransactionTable();
-    closeModal();
-    openSuccessModal(val);
+      updateBalanceDisplay();
+      renderTransactionTable();
+      closeModal();
+      openSuccessModal(val);
+    } catch (err) {
+      alert(err.message || 'Deposit failed');
+    }
   }
 
-  function handleWithdrawSubmit(e) {
+  async function handleWithdrawSubmit(e) {
     e.preventDefault();
     const val = parseFloat(document.getElementById('withdrawAmount').value);
     if (isNaN(val) || val <= 0) return;
@@ -1166,55 +1203,65 @@
       return;
     }
 
-    state.balances.availableBalance -= val;
-    state.transactions.unshift({
-      id: `TX-${Math.floor(100 + Math.random() * 900)}`,
-      type: 'withdraw',
-      desc: 'Withdrawal Request',
-      date: new Date().toISOString().split('T')[0],
-      amount: val
-    });
+    try {
+      await postTransaction(state.user.id, 'withdrawal', val, 'Withdrawal Request');
+      state.balances.availableBalance -= val;
+      state.transactions.unshift({
+        id: `TX-${Math.floor(100 + Math.random() * 900)}`,
+        type: 'withdraw',
+        desc: 'Withdrawal Request',
+        date: new Date().toISOString().split('T')[0],
+        amount: val
+      });
 
-    updateBalanceDisplay();
-    renderTransactionTable();
-    closeModal();
+      updateBalanceDisplay();
+      renderTransactionTable();
+      closeModal();
+    } catch (err) {
+      alert(err.message || 'Withdrawal request failed');
+    }
   }
 
-  function handleBuyStock(ticker, name, price) {
+  async function handleBuyStock(ticker, name, price) {
     if (state.balances.availableBalance < price) {
       alert('Insufficient available balance to buy this stock position.');
       return;
     }
 
-    state.balances.availableBalance -= price;
-    state.balances.totalInvestments += price;
+    try {
+      await postTransaction(state.user.id, 'investment', price, `Purchased 1 ${ticker} Stock`);
+      state.balances.availableBalance -= price;
+      state.balances.totalInvestments += price;
 
-    const existing = state.holdings.find(h => h.ticker === ticker);
-    if (existing) {
-      existing.shares += 1;
-    } else {
-      state.holdings.push({
-        ticker,
-        name,
-        shares: 1,
-        buyPrice: price,
-        currentPrice: price,
-        returnRate: 1.00
+      const existing = state.holdings.find(h => h.ticker === ticker);
+      if (existing) {
+        existing.shares += 1;
+      } else {
+        state.holdings.push({
+          ticker,
+          name,
+          shares: 1,
+          buyPrice: price,
+          currentPrice: price,
+          returnRate: 1.00
+        });
+      }
+
+      state.transactions.unshift({
+        id: `TX-${Math.floor(100 + Math.random() * 900)}`,
+        type: 'investment',
+        desc: `Purchased 1 ${ticker} Stock`,
+        date: new Date().toISOString().split('T')[0],
+        amount: price
       });
+
+      updateBalanceDisplay();
+      renderHoldingsTable();
+      renderTransactionTable();
+      alert(`Successfully acquired 1 share of ${ticker}!`);
+    } catch (err) {
+      alert(err.message || 'Stock purchase failed.');
     }
-
-    state.transactions.unshift({
-      id: `TX-${Math.floor(100 + Math.random() * 900)}`,
-      type: 'investment',
-      desc: `Purchased 1 ${ticker} Stock`,
-      date: new Date().toISOString().split('T')[0],
-      amount: price
-    });
-
-    updateBalanceDisplay();
-    renderHoldingsTable();
-    renderTransactionTable();
-    alert(`Successfully acquired 1 share of ${ticker}!`);
   }
 
   // ==========================================
@@ -1332,18 +1379,23 @@
     }
 
     tbody.innerHTML = state.transactions.map(tx => {
-      const sign = tx.type === 'withdraw' ? '-' : '+';
+      const type = tx.type || 'deposit';
+      const sign = type === 'withdraw' || type === 'withdrawal' ? '-' : '+';
+      const amount = tx.amount || 0;
+      const desc = tx.desc || tx.description || 'Transaction';
+      const date = tx.date ? new Date(tx.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
+
       return `
         <tr>
           <td style="width: 25%;">
-            <span class="tx-badge-type ${tx.type}">${tx.type}</span>
+            <span class="tx-badge-type ${type}">${type}</span>
           </td>
           <td class="tx-desc-cell">
-            <div>${tx.desc}</div>
-            <div class="tx-desc-subtext">${tx.date}</div>
+            <div>${desc}</div>
+            <div class="tx-desc-subtext">${date}</div>
           </td>
-          <td class="tx-amt-cell ${tx.type}">
-            ${sign}${formatCurrency(tx.amount)}
+          <td class="tx-amt-cell ${type}">
+            ${sign}${formatCurrency(amount)}
           </td>
         </tr>
       `;
