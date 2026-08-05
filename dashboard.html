@@ -1411,5 +1411,32 @@
     }
   }
 </script>
+<!-- Bottom of dashboard.html -->
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      await fetchUserData();
+      setInterval(fetchUserData, 5000);
+    });
+
+    async function fetchUserData() {
+      const token = localStorage.getItem('authToken');
+      if (!token) return;
+
+      try {
+        const response = await fetch('/api/user/profile', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (response.ok) {
+          const user = await response.json();
+          const balanceElement = document.getElementById('available-balance');
+          if (balanceElement) {
+            balanceElement.textContent = `$${Number(user.balance).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+          }
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+  </script>
 </body>
 </html>
