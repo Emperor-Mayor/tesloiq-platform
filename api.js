@@ -17,7 +17,17 @@ function getAuthenticatedUserId() {
  */
 async function fetchUserProfile(userId) {
     try {
-        const response = await fetch(`${API_BASE_URL}/user/${userId}`);
+        const token = localStorage.getItem('authToken');
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        const response = await fetch(`${API_BASE_URL}/user/${userId}`, { headers });
+        if (response.status === 401) {
+            localStorage.removeItem('userId');
+            localStorage.removeItem('authToken');
+            window.location.replace('./Sign_In.html');
+            return null;
+        }
         if (!response.ok) throw new Error('Failed to fetch user data');
         return await response.json();
     } catch (err) {
@@ -31,7 +41,17 @@ async function fetchUserProfile(userId) {
  */
 async function fetchUserTransactions(userId) {
     try {
-        const response = await fetch(`${API_BASE_URL}/transactions/${userId}`);
+        const token = localStorage.getItem('authToken');
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        const response = await fetch(`${API_BASE_URL}/transactions/${userId}`, { headers });
+        if (response.status === 401) {
+            localStorage.removeItem('userId');
+            localStorage.removeItem('authToken');
+            window.location.replace('./Sign_In.html');
+            return [];
+        }
         if (!response.ok) throw new Error('Failed to fetch transactions');
         return await response.json();
     } catch (err) {
@@ -45,9 +65,13 @@ async function fetchUserTransactions(userId) {
  */
 async function postTransaction(userId, type, amount, description) {
     try {
+        const token = localStorage.getItem('authToken');
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
         const response = await fetch(`${API_BASE_URL}/transactions`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: headers,
             body: JSON.stringify({
                 userId: userId,
                 type: type, // 'deposit', 'withdrawal', or 'investment'
@@ -55,6 +79,13 @@ async function postTransaction(userId, type, amount, description) {
                 desc: description
             })
         });
+
+        if (response.status === 401) {
+            localStorage.removeItem('userId');
+            localStorage.removeItem('authToken');
+            window.location.replace('./Sign_In.html');
+            return null;
+        }
 
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || 'Transaction failed');
