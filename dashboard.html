@@ -6,14 +6,15 @@
     <title>Tesloiq Dashboard</title>
     <script src="./api.js"></script>
     <script>
-      // Security Gate: Check for authenticated userId matching server schema structure
-      let currentUserId = localStorage.getItem('userId') || 'USER-0082';
-
-      if (!localStorage.getItem('userId')) {
-        localStorage.setItem('userId', currentUserId);
+      // Security Gate: Check for authenticated session token across browsers
+      const authToken = localStorage.getItem('authToken');
+      if (!authToken) {
+        // Redirect to sign-in if no active authenticated session exists
+        window.location.replace('./Sign_In.html');
       }
 
-      window.currentUserId = currentUserId;
+      // Decode token payload or fetch current user metadata safely
+      window.authToken = authToken;
     </script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -269,9 +270,9 @@
             <a class="desktop-nav-item" onclick="openWithdrawModal()"><i class="fa-solid fa-arrow-up"></i> Withdraw Funds</a>
         </div>
         <div class="desktop-user-profile">
-            <div class="user-avatar" id="desktopUserAvatar">K</div>
+            <div class="user-avatar" id="desktopUserAvatar">...</div>
             <div>
-                <div style="font-size: 13px; font-weight: 700;" id="desktopUserName">Kid Rock</div>
+                <div style="font-size: 13px; font-weight: 700;" id="desktopUserName">Loading...</div>
             </div>
         </div>
     </div>
@@ -298,7 +299,7 @@
                     <button class="menu-btn mobile-only" onclick="toggleDrawer()"><i class="fa-solid fa-bars"></i></button>
                     <div class="title-area">
                         <h1>Dashboard</h1>
-                        <p id="welcomeUserText">Welcome back, Kid</p>
+                        <p id="welcomeUserText">Welcome back</p>
                     </div>
                 </div>
                 <div class="header-right">
@@ -317,9 +318,9 @@
                                 <div class="card-header-row">
                                     <div>
                                         <div class="card-meta-title">TESLOIQ</div>
-                                        <div class="card-holder-name" id="cardUserName">Kid Rock</div>
+                                        <div class="card-holder-name" id="cardUserName">User</div>
                                     </div>
-                                    <div class="card-sub-identifier">Trading Account •••• 0082</div>
+                                    <div class="card-sub-identifier" id="accountSubId">Trading Account</div>
                                 </div>
                                 <div class="card-indicator-badge">Active</div>
                                 <div class="card-balance-section">
@@ -337,7 +338,7 @@
                                 <div class="card-header-row">
                                     <div>
                                         <div class="card-meta-title">INVESTMENT PORTFOLIO</div>
-                                        <div class="card-holder-name" id="portfolioUserName">Kid Rock</div>
+                                        <div class="card-holder-name" id="portfolioUserName">User</div>
                                     </div>
                                     <div class="card-sub-identifier">Equity Holdings</div>
                                 </div>
@@ -354,7 +355,7 @@
                                 <div class="card-header-row">
                                     <div>
                                         <div class="card-meta-title">PROFIT & LOSS</div>
-                                        <div class="card-holder-name" id="plUserName">Kid Rock</div>
+                                        <div class="card-holder-name" id="plUserName">User</div>
                                     </div>
                                     <div class="card-sub-identifier" id="plPercentageBadge">Performance +0.00%</div>
                                 </div>
@@ -584,7 +585,7 @@
                     <button class="menu-btn mobile-only" onclick="toggleDrawer()"><i class="fa-solid fa-bars"></i></button>
                     <div class="title-area">
                         <h1>Membership Cards</h1>
-                        <p>Welcome back, Kid</p>
+                        <p id="memberWelcomeSubText">Welcome back</p>
                     </div>
                 </div>
             </div>
@@ -698,45 +699,11 @@
 
 <script>
   // ==========================================
-  // 1. PERSISTENT STATE MANAGEMENT & API SYNC
+  // 1. SECURE AUTHENTICATED STATE MANAGEMENT
   // ==========================================
-  const userId = window.currentUserId || 'USER-0082';
-  const storageKey = `userData_${userId}`;
-
-  // Default initial blueprint for new users
-  const defaultUserData = {
-    user: {
-      id: userId,
-      name: 'Kid Rock',
-      avatar: 'K'
-    },
-    balances: {
-      availableBalance: 0.00,
-      totalInvestments: 0.00,
-      totalPnL: 0.00,
-      pnlPercentage: 0.00
-    },
-    transactions: [],
-    holdings: []
-  };
-
-  function loadPersistedState() {
-    const raw = localStorage.getItem(storageKey);
-    if (raw) {
-      try {
-        return JSON.parse(raw);
-      } catch (e) {
-        console.error('Failed parsing local state, using defaults', e);
-      }
-    }
-    return defaultUserData;
-  }
-
-  const persistentData = loadPersistedState();
-
   const state = {
-    user: persistentData.user,
-    balances: persistentData.balances,
+    user: { id: null, name: 'User', avatar: 'U' },
+    balances: { availableBalance: 0.00, totalInvestments: 0.00, totalPnL: 0.00, pnlPercentage: 0.00 },
     cryptoWallets: {
       btc: "bc1qy5nkg0rsu7w4vp63c0a3es26uxnhwrjyu2c0gn",
       bnb: "0xcf9CF6cC3A8F314999c9d2ba1136cB07255eFf0B",
@@ -746,8 +713,8 @@
       sui: "0x7ab9b39eee123c5c2c035ee221ed77489957169448657c571ad2151a4991d341",
       eth: "0xcf9CF6cC3A8F314999c9d2ba1136cB07255eFf0B"
     },
-    transactions: persistentData.transactions || [],
-    holdings: persistentData.holdings || [],
+    transactions: [],
+    holdings: [],
     activeView: 'dashboardView',
     isBalanceHidden: false,
     currentSlide: 0,
@@ -757,16 +724,6 @@
     depositTimerInterval: null,
     depositTimeRemaining: 600
   };
-
-  function savePersistedState() {
-    const payload = {
-      user: state.user,
-      balances: state.balances,
-      transactions: state.transactions,
-      holdings: state.holdings
-    };
-    localStorage.setItem(storageKey, JSON.stringify(payload));
-  }
 
   const chartDataSets = {
     stocks: {
@@ -792,7 +749,6 @@
   };
 
   document.addEventListener('DOMContentLoaded', async () => {
-    // Synchronize balance and details from server API across different browsers
     await loadInitialAPIData();
     initUI();
     initSlider();
@@ -801,30 +757,49 @@
     renderTransactionTable();
   });
 
+  // Secure API Call Wrapper attaching Authorization Bearer Token
+  async function authenticatedFetch(endpoint, options = {}) {
+    const token = localStorage.getItem('authToken');
+    const headers = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+      ...(options.headers || {})
+    };
+    const response = await fetch(endpoint, { ...options, headers });
+    if (response.status === 401) {
+      // Session expired or invalid token
+      handleLogout();
+      return null;
+    }
+    return response.json();
+  }
+
   async function loadInitialAPIData() {
     try {
-      if (typeof fetchUserProfile === 'function') {
-        const profile = await fetchUserProfile(state.user.id);
+      const userId = getAuthenticatedUserId();
+      if (typeof fetchUserProfile === 'function' && userId) {
+        const profile = await fetchUserProfile(userId);
         if (profile) {
-          state.user.name = profile.name || profile.username || state.user.name;
+          state.user.id = profile.id || userId;
+          state.user.name = profile.name || profile.username || 'User';
           state.user.avatar = state.user.name.charAt(0).toUpperCase();
-          state.balances.availableBalance = parseFloat(profile.balance !== undefined ? profile.balance : profile.availableBalance || state.balances.availableBalance);
-          state.balances.totalInvestments = parseFloat(profile.totalInvestments !== undefined ? profile.totalInvestments : state.balances.totalInvestments);
+          state.balances.availableBalance = parseFloat(profile.balance ?? profile.availableBalance ?? 0);
+          state.balances.totalInvestments = parseFloat(profile.totalInvestments ?? 0);
+          state.balances.totalPnL = parseFloat(profile.totalPnL ?? 0);
+          state.balances.pnlPercentage = parseFloat(profile.pnlPercentage ?? 0);
           if (profile.holdings && Array.isArray(profile.holdings)) {
             state.holdings = profile.holdings;
           }
-          savePersistedState();
         }
       }
-      if (typeof fetchUserTransactions === 'function') {
-        const txs = await fetchUserTransactions(state.user.id);
-        if (Array.isArray(txs) && txs.length > 0) {
+      if (typeof fetchUserTransactions === 'function' && userId) {
+        const txs = await fetchUserTransactions(userId);
+        if (Array.isArray(txs)) {
           state.transactions = txs;
-          savePersistedState();
         }
       }
     } catch (e) {
-      console.warn('Backend API connection offline, utilizing local cached state.', e);
+      console.error('API sync failed. Verify backend network session.', e);
     }
   }
 
@@ -835,10 +810,18 @@
     const welcomeEl = document.getElementById('welcomeUserText');
     if (welcomeEl) welcomeEl.innerText = `Welcome back, ${nameStr}`;
 
+    const memberWelcomeEl = document.getElementById('memberWelcomeSubText');
+    if (memberWelcomeEl) memberWelcomeEl.innerText = `Welcome back, ${nameStr}`;
+
     ['cardUserName', 'portfolioUserName', 'plUserName', 'desktopUserName'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.innerText = nameStr;
     });
+
+    const accountSubId = document.getElementById('accountSubId');
+    if (accountSubId && state.user.id) {
+      accountSubId.innerText = `Trading Account •••• ${state.user.id.slice(-4)}`;
+    }
 
     const avatarEl = document.getElementById('desktopUserAvatar');
     if (avatarEl) avatarEl.innerText = initial;
@@ -1111,25 +1094,19 @@
     const selectEl = document.getElementById('depositMethod');
     const method = selectEl.options[selectEl.selectedIndex].text;
 
-    if (typeof postTransaction === 'function') {
-      try { await postTransaction(state.user.id, 'deposit', amountVal, `Crypto Deposit (${method})`); } catch (e) {}
+    try {
+      const userId = getAuthenticatedUserId();
+      if (typeof postTransaction === 'function' && userId) {
+        await postTransaction(userId, 'deposit', amountVal, `Crypto Deposit (${method})`);
+      }
+      await loadInitialAPIData();
+      updateBalanceDisplay();
+      renderTransactionTable();
+      closeModal();
+      openSuccessModal(amountVal);
+    } catch (e) {
+      alert('Failed to process server deposit transaction.');
     }
-
-    state.balances.availableBalance += amountVal;
-
-    state.transactions.unshift({
-      id: `TX-${Math.floor(100 + Math.random() * 900)}`,
-      type: 'deposit',
-      desc: method,
-      date: new Date().toISOString().split('T')[0],
-      amount: amountVal
-    });
-
-    savePersistedState();
-    updateBalanceDisplay();
-    renderTransactionTable();
-    closeModal();
-    openSuccessModal(amountVal);
   }
 
   function openSuccessModal(amount) {
@@ -1220,24 +1197,19 @@
     
     if (isNaN(val) || val <= 0) return;
 
-    if (typeof postTransaction === 'function') {
-      try { await postTransaction(state.user.id, 'deposit', val, method); } catch (e) {}
+    try {
+      const userId = getAuthenticatedUserId();
+      if (typeof postTransaction === 'function' && userId) {
+        await postTransaction(userId, 'deposit', val, method);
+      }
+      await loadInitialAPIData();
+      updateBalanceDisplay();
+      renderTransactionTable();
+      closeModal();
+      openSuccessModal(val);
+    } catch (e) {
+      alert('Error recording deposit transaction to central server.');
     }
-
-    state.balances.availableBalance += val;
-    state.transactions.unshift({
-      id: `TX-${Math.floor(100 + Math.random() * 900)}`,
-      type: 'deposit',
-      desc: method,
-      date: new Date().toISOString().split('T')[0],
-      amount: val
-    });
-
-    savePersistedState();
-    updateBalanceDisplay();
-    renderTransactionTable();
-    closeModal();
-    openSuccessModal(val);
   }
 
   async function handleWithdrawSubmit(e) {
@@ -1250,23 +1222,18 @@
       return;
     }
 
-    if (typeof postTransaction === 'function') {
-      try { await postTransaction(state.user.id, 'withdrawal', val, 'Withdrawal Request'); } catch (e) {}
+    try {
+      const userId = getAuthenticatedUserId();
+      if (typeof postTransaction === 'function' && userId) {
+        await postTransaction(userId, 'withdrawal', val, 'Withdrawal Request');
+      }
+      await loadInitialAPIData();
+      updateBalanceDisplay();
+      renderTransactionTable();
+      closeModal();
+    } catch (e) {
+      alert('Error processing server withdrawal.');
     }
-
-    state.balances.availableBalance -= val;
-    state.transactions.unshift({
-      id: `TX-${Math.floor(100 + Math.random() * 900)}`,
-      type: 'withdraw',
-      desc: 'Withdrawal Request',
-      date: new Date().toISOString().split('T')[0],
-      amount: val
-    });
-
-    savePersistedState();
-    updateBalanceDisplay();
-    renderTransactionTable();
-    closeModal();
   }
 
   async function handleBuyStock(ticker, name, price) {
@@ -1275,40 +1242,19 @@
       return;
     }
 
-    if (typeof postTransaction === 'function') {
-      try { await postTransaction(state.user.id, 'investment', price, `Purchased 1 ${ticker} Stock`); } catch (e) {}
+    try {
+      const userId = getAuthenticatedUserId();
+      if (typeof postTransaction === 'function' && userId) {
+        await postTransaction(userId, 'investment', price, `Purchased 1 ${ticker} Stock`);
+      }
+      await loadInitialAPIData();
+      updateBalanceDisplay();
+      renderHoldingsTable();
+      renderTransactionTable();
+      alert(`Successfully acquired 1 share of ${ticker}!`);
+    } catch (e) {
+      alert('Stock transaction failed on server backend.');
     }
-
-    state.balances.availableBalance -= price;
-    state.balances.totalInvestments += price;
-
-    const existing = state.holdings.find(h => h.ticker === ticker);
-    if (existing) {
-      existing.shares += 1;
-    } else {
-      state.holdings.push({
-        ticker,
-        name,
-        shares: 1,
-        buyPrice: price,
-        currentPrice: price,
-        returnRate: 1.00
-      });
-    }
-
-    state.transactions.unshift({
-      id: `TX-${Math.floor(100 + Math.random() * 900)}`,
-      type: 'investment',
-      desc: `Purchased 1 ${ticker} Stock`,
-      date: new Date().toISOString().split('T')[0],
-      amount: price
-    });
-
-    savePersistedState();
-    updateBalanceDisplay();
-    renderHoldingsTable();
-    renderTransactionTable();
-    alert(`Successfully acquired 1 share of ${ticker}!`);
   }
 
   // ==========================================
@@ -1410,7 +1356,7 @@
           </td>
           <td>${item.shares}</td>
           <td style="font-weight:600; color:#fff;">${formatCurrency(val)}</td>
-          <td style="color:#3fb950; font-weight:700;">+${item.returnRate.toFixed(2)}%</td>
+          <td style="color:#3fb950; font-weight:700;">+${(item.returnRate || 1.00).toFixed(2)}%</td>
         </tr>
       `;
     }).join('');
@@ -1455,6 +1401,7 @@
   function handleLogout() {
     if (confirm('Are you sure you want to log out of Tesloiq?')) {
       localStorage.removeItem('userId');
+      localStorage.removeItem('authToken');
       window.location.replace('./Sign_In.html');
     }
   }
