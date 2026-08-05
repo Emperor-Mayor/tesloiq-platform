@@ -97,7 +97,9 @@
             
             if (!res.ok) throw new Error(data.error || "Invalid credentials sequence.");
             
-            // Save user info locally
+            // Save required session & user tokens locally
+            const token = data.token || data.authToken || data.userId || data._id;
+            localStorage.setItem('authToken', token);
             localStorage.setItem('userId', data.userId || data._id);
             localStorage.setItem('userEmail', data.email);
             localStorage.setItem('userName', data.name);
