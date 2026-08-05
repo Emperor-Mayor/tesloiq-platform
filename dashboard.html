@@ -203,13 +203,13 @@
         
         .tx-badge-type { padding: 4px 8px; border-radius: 6px; font-size: 9px; font-weight: 700; text-transform: uppercase; display: inline-block; letter-spacing: 0.5px; }
         .tx-badge-type.deposit { background: rgba(46, 160, 67, 0.12); color: #3fb950; }
-        .tx-badge-type.withdraw { background: rgba(248, 81, 73, 0.12); color: #f85149; }
+        .tx-badge-type.withdraw, .tx-badge-type.withdrawal { background: rgba(248, 81, 73, 0.12); color: #f85149; }
         .tx-badge-type.investment { background: rgba(56, 139, 253, 0.12); color: #388bfd; }
         .tx-desc-cell { font-weight: 500; color: #c9d1d9; }
         .tx-desc-subtext { font-size: 10px; color: #6e7681; margin-top: 2px; }
         .tx-amt-cell { font-weight: 700; font-size: 13px; text-align: right; }
         .tx-amt-cell.deposit { color: #3fb950; }
-        .tx-amt-cell.withdraw { color: #f85149; }
+        .tx-amt-cell.withdraw, .tx-amt-cell.withdrawal { color: #f85149; }
         .tx-amt-cell.investment { color: #58a6ff; }
 
         /* Modals Structure Layout */
@@ -610,7 +610,7 @@
                     <li class="tier-perk-item"><i class="fa-solid fa-check"></i> Monthly market insights</li>
                 </ul>
 
-                <button class="btn-apply-tier" onclick="openDepositModal()">
+                <button class="btn-apply-tier" onclick="openDepositModal(2500)">
                     <i class="fa-solid fa-wallet"></i>
                     <span>Apply — $2,500</span>
                 </button>
@@ -638,7 +638,7 @@
                     <li class="tier-perk-item"><i class="fa-solid fa-check"></i> Early access to limited editions</li>
                 </ul>
 
-                <button class="btn-apply-tier" onclick="openDepositModal()">
+                <button class="btn-apply-tier" onclick="openDepositModal(7500)">
                     <i class="fa-solid fa-wallet"></i>
                     <span>Apply — $7,500</span>
                 </button>
@@ -663,7 +663,7 @@
                     <li class="tier-perk-item"><i class="fa-solid fa-check"></i> First priority on all orders</li>
                 </ul>
 
-                <button class="btn-apply-tier" onclick="openDepositModal()">
+                <button class="btn-apply-tier" onclick="openDepositModal(15000)">
                     <i class="fa-solid fa-wallet"></i>
                     <span>Apply — $15,000</span>
                 </button>
@@ -756,23 +756,6 @@
     renderHoldingsTable();
     renderTransactionTable();
   });
-
-  // Secure API Call Wrapper attaching Authorization Bearer Token
-  async function authenticatedFetch(endpoint, options = {}) {
-    const token = localStorage.getItem('authToken');
-    const headers = {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`,
-      ...(options.headers || {})
-    };
-    const response = await fetch(endpoint, { ...options, headers });
-    if (response.status === 401) {
-      // Session expired or invalid token
-      handleLogout();
-      return null;
-    }
-    return response.json();
-  }
 
   async function loadInitialAPIData() {
     try {
@@ -987,7 +970,7 @@
     return overlay;
   }
 
-  function openDepositModal() {
+  function openDepositModal(defaultAmount = '') {
     const overlay = createModalContainer();
     overlay.innerHTML = `
       <div class="modal-body" onclick="event.stopPropagation()">
@@ -998,7 +981,7 @@
         <form onsubmit="handleDepositSubmit(event)">
           <div class="form-group">
             <label class="form-label">Amount ($)</label>
-            <input type="number" step="0.01" class="form-input" id="depositAmount" placeholder="e.g. 500.00" required min="10" />
+            <input type="number" step="0.01" class="form-input" id="depositAmount" value="${defaultAmount}" placeholder="e.g. 500.00" required min="10" />
           </div>
           <div class="form-group">
             <label class="form-label">Payment Source</label>
@@ -1035,20 +1018,23 @@
   }
 
   function handleDepositMethodChange(val) {
-    const container = document.getElementById('walletAddressContainer');
-    const display = document.getElementById('walletAddressDisplay');
-    const submitBtn = document.getElementById('mainDepositSubmitBtn');
-    
+    const amountVal = parseFloat(document.getElementById('depositAmount').value);
     if (state.cryptoWallets[val]) {
-      display.innerText = state.cryptoWallets[val];
-      container.style.display = 'block';
-      if (submitBtn) submitBtn.style.display = 'none';
-      startDepositCountdown();
-    } else {
-      container.style.display = 'none';
-      if (submitBtn) submitBtn.style.display = 'block';
-      clearInterval(state.depositTimerInterval);
+      if (isNaN(amountVal) || amountVal <= 0) {
+        alert('Please enter a valid deposit amount first.');
+        document.getElementById('depositMethod').value = 'Wire Transfer';
+        return;
+      }
+      localStorage.setItem('customDepositAmount', amountVal);
+      window.location.href = './CryptoDepositGateway.html';
+      return;
     }
+
+    const container = document.getElementById('walletAddressContainer');
+    const submitBtn = document.getElementById('mainDepositSubmitBtn');
+    if (container) container.style.display = 'none';
+    if (submitBtn) submitBtn.style.display = 'block';
+    clearInterval(state.depositTimerInterval);
   }
 
   function startDepositCountdown() {
