@@ -1296,6 +1296,7 @@
     }
 
     try {
+      // CORRECTION APPLIED BELOW: Deduct purchase price from available balance instead of adding
       state.balances.availableBalance -= price;
       state.balances.totalInvestments += price;
       
