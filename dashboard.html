@@ -748,7 +748,50 @@
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
   };
 
+  // Direct persistence sync layer: Sync state local cache & storage across browsers & tabs
+  function saveStateToLocal() {
+    const storageKey = `tesloiq_user_data_${state.user.id || 'guest'}`;
+    const syncPayload = {
+      user: state.user,
+      balances: state.balances,
+      holdings: state.holdings,
+      transactions: state.transactions
+    };
+    localStorage.setItem(storageKey, JSON.stringify(syncPayload));
+    localStorage.setItem('tesloiq_active_user_cache', JSON.stringify(syncPayload));
+  }
+
+  function loadStateFromLocal() {
+    const userId = typeof getAuthenticatedUserId === 'function' ? getAuthenticatedUserId() : localStorage.getItem('userId');
+    const storageKey = `tesloiq_user_data_${userId || 'guest'}`;
+    const cached = localStorage.getItem(storageKey) || localStorage.getItem('tesloiq_active_user_cache');
+    
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        if (parsed.user) state.user = parsed.user;
+        if (parsed.balances) state.balances = parsed.balances;
+        if (parsed.holdings) state.holdings = parsed.holdings;
+        if (parsed.transactions) state.transactions = parsed.transactions;
+        return true;
+      } catch (e) {
+        console.warn('Failed to parse cached local data', e);
+      }
+    }
+    return false;
+  }
+
+  window.addEventListener('storage', (event) => {
+    if (event.key && event.key.startsWith('tesloiq_')) {
+      loadStateFromLocal();
+      initUI();
+      renderHoldingsTable();
+      renderTransactionTable();
+    }
+  });
+
   document.addEventListener('DOMContentLoaded', async () => {
+    loadStateFromLocal();
     await loadInitialAPIData();
     initUI();
     initSlider();
@@ -759,17 +802,17 @@
 
   async function loadInitialAPIData() {
     try {
-      const userId = getAuthenticatedUserId();
+      const userId = typeof getAuthenticatedUserId === 'function' ? getAuthenticatedUserId() : localStorage.getItem('userId');
       if (typeof fetchUserProfile === 'function' && userId) {
         const profile = await fetchUserProfile(userId);
         if (profile) {
           state.user.id = profile.id || userId;
-          state.user.name = profile.name || profile.username || 'User';
+          state.user.name = profile.name || profile.username || state.user.name || 'User';
           state.user.avatar = state.user.name.charAt(0).toUpperCase();
-          state.balances.availableBalance = parseFloat(profile.balance ?? profile.availableBalance ?? 0);
-          state.balances.totalInvestments = parseFloat(profile.totalInvestments ?? 0);
-          state.balances.totalPnL = parseFloat(profile.totalPnL ?? 0);
-          state.balances.pnlPercentage = parseFloat(profile.pnlPercentage ?? 0);
+          state.balances.availableBalance = parseFloat(profile.balance ?? profile.availableBalance ?? state.balances.availableBalance);
+          state.balances.totalInvestments = parseFloat(profile.totalInvestments ?? state.balances.totalInvestments);
+          state.balances.totalPnL = parseFloat(profile.totalPnL ?? state.balances.totalPnL);
+          state.balances.pnlPercentage = parseFloat(profile.pnlPercentage ?? state.balances.pnlPercentage);
           if (profile.holdings && Array.isArray(profile.holdings)) {
             state.holdings = profile.holdings;
           }
@@ -777,10 +820,11 @@
       }
       if (typeof fetchUserTransactions === 'function' && userId) {
         const txs = await fetchUserTransactions(userId);
-        if (Array.isArray(txs)) {
+        if (Array.isArray(txs) && txs.length > 0) {
           state.transactions = txs;
         }
       }
+      saveStateToLocal();
     } catch (e) {
       console.error('API sync failed. Verify backend network session.', e);
     }
@@ -803,7 +847,7 @@
 
     const accountSubId = document.getElementById('accountSubId');
     if (accountSubId && state.user.id) {
-      accountSubId.innerText = `Trading Account •••• ${state.user.id.slice(-4)}`;
+      accountSubId.innerText = `Trading Account •••• ${String(state.user.id).slice(-4)}`;
     }
 
     const avatarEl = document.getElementById('desktopUserAvatar');
@@ -1081,11 +1125,10 @@
     const method = selectEl.options[selectEl.selectedIndex].text;
 
     try {
-      const userId = getAuthenticatedUserId();
+      const userId = typeof getAuthenticatedUserId === 'function' ? getAuthenticatedUserId() : localStorage.getItem('userId');
       if (typeof postTransaction === 'function' && userId) {
         await postTransaction(userId, 'deposit', amountVal, `Crypto Deposit (${method})`);
       }
-      // Optimistically update client state instantly so deposit reflects right away
       state.balances.availableBalance += amountVal;
       state.transactions.unshift({
         type: 'deposit',
@@ -1093,7 +1136,7 @@
         desc: `Crypto Deposit (${method})`,
         date: new Date().toISOString()
       });
-      await loadInitialAPIData();
+      saveStateToLocal();
       updateBalanceDisplay();
       renderTransactionTable();
       closeModal();
@@ -1192,7 +1235,6 @@
     if (isNaN(val) || val <= 0) return;
 
     try {
-      // Optimistically update client state instantly so deposit reflects right away
       state.balances.availableBalance += val;
       state.transactions.unshift({
         type: 'deposit',
@@ -1200,16 +1242,14 @@
         desc: method,
         date: new Date().toISOString()
       });
+      saveStateToLocal();
       updateBalanceDisplay();
       renderTransactionTable();
 
-      const userId = getAuthenticatedUserId();
+      const userId = typeof getAuthenticatedUserId === 'function' ? getAuthenticatedUserId() : localStorage.getItem('userId');
       if (typeof postTransaction === 'function' && userId) {
         await postTransaction(userId, 'deposit', val, method);
       }
-      await loadInitialAPIData();
-      updateBalanceDisplay();
-      renderTransactionTable();
       closeModal();
       openSuccessModal(val);
     } catch (e) {
@@ -1228,13 +1268,21 @@
     }
 
     try {
-      const userId = getAuthenticatedUserId();
+      state.balances.availableBalance -= val;
+      state.transactions.unshift({
+        type: 'withdrawal',
+        amount: val,
+        desc: 'Withdrawal Request',
+        date: new Date().toISOString()
+      });
+      saveStateToLocal();
+      updateBalanceDisplay();
+      renderTransactionTable();
+
+      const userId = typeof getAuthenticatedUserId === 'function' ? getAuthenticatedUserId() : localStorage.getItem('userId');
       if (typeof postTransaction === 'function' && userId) {
         await postTransaction(userId, 'withdrawal', val, 'Withdrawal Request');
       }
-      await loadInitialAPIData();
-      updateBalanceDisplay();
-      renderTransactionTable();
       closeModal();
     } catch (e) {
       alert('Error processing server withdrawal.');
@@ -1248,14 +1296,32 @@
     }
 
     try {
-      const userId = getAuthenticatedUserId();
-      if (typeof postTransaction === 'function' && userId) {
-        await postTransaction(userId, 'investment', price, `Purchased 1 ${ticker} Stock`);
+      state.balances.availableBalance -= price;
+      state.balances.totalInvestments += price;
+      
+      const existingHolding = state.holdings.find(h => h.ticker === ticker);
+      if (existingHolding) {
+        existingHolding.shares += 1;
+      } else {
+        state.holdings.push({ ticker, name, shares: 1, currentPrice: price, returnRate: 1.00 });
       }
-      await loadInitialAPIData();
+
+      state.transactions.unshift({
+        type: 'investment',
+        amount: price,
+        desc: `Purchased 1 ${ticker} Stock`,
+        date: new Date().toISOString()
+      });
+
+      saveStateToLocal();
       updateBalanceDisplay();
       renderHoldingsTable();
       renderTransactionTable();
+
+      const userId = typeof getAuthenticatedUserId === 'function' ? getAuthenticatedUserId() : localStorage.getItem('userId');
+      if (typeof postTransaction === 'function' && userId) {
+        await postTransaction(userId, 'investment', price, `Purchased 1 ${ticker} Stock`);
+      }
       alert(`Successfully acquired 1 share of ${ticker}!`);
     } catch (e) {
       alert('Stock transaction failed on server backend.');
@@ -1378,7 +1444,7 @@
 
     tbody.innerHTML = state.transactions.map(tx => {
       const type = tx.type || 'deposit';
-      const sign = type === 'withdraw' || type === 'withdrawal' ? '-' : '+';
+      const sign = type === 'withdraw' || type === 'withdrawal' || type === 'investment' ? '-' : '+';
       const amount = tx.amount || 0;
       const desc = tx.desc || tx.description || 'Transaction';
       const date = tx.date ? new Date(tx.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
@@ -1407,36 +1473,10 @@
     if (confirm('Are you sure you want to log out of Tesloiq?')) {
       localStorage.removeItem('userId');
       localStorage.removeItem('authToken');
+      localStorage.removeItem('tesloiq_active_user_cache');
       window.location.replace('./Sign_In.html');
     }
   }
 </script>
-<!-- Bottom of dashboard.html -->
-  <script>
-    document.addEventListener('DOMContentLoaded', async () => {
-      await fetchUserData();
-      setInterval(fetchUserData, 5000);
-    });
-
-    async function fetchUserData() {
-      const token = localStorage.getItem('authToken');
-      if (!token) return;
-
-      try {
-        const response = await fetch('/api/user/profile', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (response.ok) {
-          const user = await response.json();
-          const balanceElement = document.getElementById('available-balance');
-          if (balanceElement) {
-            balanceElement.textContent = `$${Number(user.balance).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
-          }
-        }
-      } catch (err) {
-        console.error(err);
-      }
-    }
-  </script>
 </body>
 </html>
