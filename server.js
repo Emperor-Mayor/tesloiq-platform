@@ -24,7 +24,7 @@ const UserSchema = new mongoose.Schema({
 
 const TransactionSchema = new mongoose.Schema({
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    type: { type: String, enum: ['deposit', 'withdraw'], required: true },
+    type: { type: String, enum: ['deposit', 'withdraw', 'investment'], required: true }, // Added 'investment'
     desc: { type: String, required: true },
     amount: { type: Number, required: true },
     date: { type: Date, default: Date.now }
@@ -50,21 +50,21 @@ app.post('/api/register', async (req, res) => {
     }
 });
 
-// Sign In / Login Route
+// Sign In / Login Route (Returns balance on login)
 app.post('/api/login', async (req, res) => {
     try {
         const { email, password } = req.body;
         const user = await User.findOne({ email, password });
         if (!user) return res.status(401).json({ error: "Invalid credentials" });
         
-        res.json({ userId: user._id, name: user.name, email: user.email });
+        res.json({ userId: user._id, name: user.name, email: user.email, balance: user.balance });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
-// Fetch User Profile Data
-app.get('/api/user/profile/:userId', async (req, res) => {
+// Fetch User Profile Data (Route aligned with api.js)
+app.get('/api/user/:userId', async (req, res) => {
     try {
         const user = await User.findById(req.params.userId);
         if (!user) return res.status(404).json({ error: "User not found" });
@@ -84,7 +84,7 @@ app.get('/api/transactions/:userId', async (req, res) => {
     }
 });
 
-// Create a New Deposit or Withdrawal
+// Create a New Deposit, Withdrawal, or Investment
 app.post('/api/transactions', async (req, res) => {
     try {
         const { userId, type, amount, desc } = req.body;
@@ -93,12 +93,16 @@ app.post('/api/transactions', async (req, res) => {
 
         const parsedAmount = parseFloat(amount);
 
-        if (type === 'withdraw' && user.balance < parsedAmount) {
+        // Check funds for withdrawals and investments
+        if ((type === 'withdraw' || type === 'investment') && user.balance < parsedAmount) {
             return res.status(400).json({ error: "Insufficient balance" });
         }
 
-        if (type === 'deposit') user.balance += parsedAmount;
-        else if (type === 'withdraw') user.balance -= parsedAmount;
+        if (type === 'deposit') {
+            user.balance += parsedAmount;
+        } else if (type === 'withdraw' || type === 'investment') {
+            user.balance -= parsedAmount; // Deducts correctly from balance
+        }
 
         await user.save();
 
