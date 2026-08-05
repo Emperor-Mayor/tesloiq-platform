@@ -1085,6 +1085,14 @@
       if (typeof postTransaction === 'function' && userId) {
         await postTransaction(userId, 'deposit', amountVal, `Crypto Deposit (${method})`);
       }
+      // Optimistically update client state instantly so deposit reflects right away
+      state.balances.availableBalance += amountVal;
+      state.transactions.unshift({
+        type: 'deposit',
+        amount: amountVal,
+        desc: `Crypto Deposit (${method})`,
+        date: new Date().toISOString()
+      });
       await loadInitialAPIData();
       updateBalanceDisplay();
       renderTransactionTable();
@@ -1184,6 +1192,17 @@
     if (isNaN(val) || val <= 0) return;
 
     try {
+      // Optimistically update client state instantly so deposit reflects right away
+      state.balances.availableBalance += val;
+      state.transactions.unshift({
+        type: 'deposit',
+        amount: val,
+        desc: method,
+        date: new Date().toISOString()
+      });
+      updateBalanceDisplay();
+      renderTransactionTable();
+
       const userId = getAuthenticatedUserId();
       if (typeof postTransaction === 'function' && userId) {
         await postTransaction(userId, 'deposit', val, method);
