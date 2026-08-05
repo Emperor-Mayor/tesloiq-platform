@@ -698,7 +698,7 @@
 
 <script>
   // ==========================================
-  // 1. PERSISTENT STATE MANAGEMENT
+  // 1. PERSISTENT STATE MANAGEMENT & API SYNC
   // ==========================================
   const userId = window.currentUserId || 'USER-0082';
   const storageKey = `userData_${userId}`;
@@ -720,7 +720,6 @@
     holdings: []
   };
 
-  // Load user data persistently from LocalStorage or fall back to defaults
   function loadPersistedState() {
     const raw = localStorage.getItem(storageKey);
     if (raw) {
@@ -793,6 +792,7 @@
   };
 
   document.addEventListener('DOMContentLoaded', async () => {
+    // Synchronize balance and details from server API across different browsers
     await loadInitialAPIData();
     initUI();
     initSlider();
@@ -808,8 +808,11 @@
         if (profile) {
           state.user.name = profile.name || profile.username || state.user.name;
           state.user.avatar = state.user.name.charAt(0).toUpperCase();
-          state.balances.availableBalance = parseFloat(profile.balance || profile.availableBalance || state.balances.availableBalance);
-          state.balances.totalInvestments = parseFloat(profile.totalInvestments || state.balances.totalInvestments);
+          state.balances.availableBalance = parseFloat(profile.balance !== undefined ? profile.balance : profile.availableBalance || state.balances.availableBalance);
+          state.balances.totalInvestments = parseFloat(profile.totalInvestments !== undefined ? profile.totalInvestments : state.balances.totalInvestments);
+          if (profile.holdings && Array.isArray(profile.holdings)) {
+            state.holdings = profile.holdings;
+          }
           savePersistedState();
         }
       }
@@ -821,7 +824,7 @@
         }
       }
     } catch (e) {
-      console.warn('API unresolved, using local storage state.', e);
+      console.warn('Backend API connection offline, utilizing local cached state.', e);
     }
   }
 
@@ -1276,7 +1279,6 @@
       try { await postTransaction(state.user.id, 'investment', price, `Purchased 1 ${ticker} Stock`); } catch (e) {}
     }
 
-    // Deduction from available balance logic applied
     state.balances.availableBalance -= price;
     state.balances.totalInvestments += price;
 
